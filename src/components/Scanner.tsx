@@ -4,6 +4,8 @@ import ConfirmModal from './ConfirmModal';
 import { db } from '../db';
 import { useNavigate } from 'react-router-dom';
 
+const WEBHOOK_URL = 'https://n8n-webhook.nubuwf.easypanel.host/webhook/imagemurl';
+
 const Scanner: React.FC = () => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -12,6 +14,7 @@ const Scanner: React.FC = () => {
     const [capturedImage, setCapturedImage] = useState<string | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [rawText, setRawText] = useState('');
+    const [webhookSent, setWebhookSent] = useState(false);
 
     // Data state
     const [scannedData, setScannedData] = useState<{ amount: number | null, clientName: string, address: string }>({
@@ -87,46 +90,55 @@ const Scanner: React.FC = () => {
                 canvasRef.current.height = videoRef.current.videoHeight;
                 context.drawImage(videoRef.current, 0, 0);
 
-                // Use JPEG for smaller file size (faster upload)
                 const imageUrl = canvasRef.current.toDataURL('image/jpeg', 0.85);
                 setCapturedImage(imageUrl);
 
                 if (flashOn) toggleFlash();
                 stopCamera();
-                processImage(imageUrl);
+                sendToWebhook(imageUrl);
             }
         }
     };
 
-    const processImage = async (imageUrl: string) => {
+    const sendToWebhook = async (imageBase64: string) => {
         setIsProcessing(true);
+        setWebhookSent(false);
         try {
-            const response = await fetch('/api/ocr', {
+            const response = await fetch(WEBHOOK_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image: imageUrl })
+                body: JSON.stringify({
+                    image: imageBase64,
+                    timestamp: new Date().toISOString()
+                })
             });
 
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.error || 'Erro na API');
+            setWebhookSent(true);
+
+            // If the webhook returns data, try to use it
+            if (response.ok) {
+                try {
+                    const data = await response.json();
+                    // If n8n returns parsed data, fill the modal
+                    if (data && (data.valor || data.value || data.clientName || data.address)) {
+                        setScannedData({
+                            amount: data.valor ?? data.value ?? null,
+                            clientName: data.clientName || data.cliente || '',
+                            address: data.address || data.endereco || ''
+                        });
+                        setRawText(data.rawText || data.texto || JSON.stringify(data, null, 2));
+                    }
+                } catch {
+                    // Response wasn't JSON — that's fine, just open manual modal
+                    console.log("Webhook response wasn't JSON, opening manual entry.");
+                }
             }
 
-            const data = await response.json();
-            console.log("OCR Result:", data);
-
-            setRawText(data.rawText || '');
-            setScannedData({
-                amount: data.value,
-                clientName: data.clientName || '',
-                address: data.address || ''
-            });
             setModalOpen(true);
         } catch (err: any) {
-            console.error("OCR Error:", err);
-            alert("Erro ao processar imagem: " + err.message);
-            setCapturedImage(null);
-            startCamera();
+            console.error("Webhook Error:", err);
+            // Even if webhook fails, allow manual entry
+            setModalOpen(true);
         } finally {
             setIsProcessing(false);
         }
@@ -150,6 +162,7 @@ const Scanner: React.FC = () => {
         setModalOpen(false);
         setCapturedImage(null);
         setRawText('');
+        setWebhookSent(false);
         startCamera();
     };
 
@@ -193,10 +206,18 @@ const Scanner: React.FC = () => {
                 {isProcessing && (
                     <div className="processing-indicator">
                         <div className="processing-text">
-                            <span>🤖 IA lendo comanda...</span>
+                            <span>📡 Enviando para n8n...</span>
                         </div>
                         <div className="progress-bar-bg">
                             <div className="progress-bar-fill progress-bar-animated" />
+                        </div>
+                    </div>
+                )}
+
+                {webhookSent && !isProcessing && !modalOpen && (
+                    <div className="processing-indicator" style={{ background: 'rgba(0,180,80,0.9)' }}>
+                        <div className="processing-text">
+                            <span>✅ Enviado!</span>
                         </div>
                     </div>
                 )}
