@@ -83,31 +83,30 @@ const Scanner: React.FC = () => {
         canvasRef.current.height = videoRef.current.videoHeight;
         context.drawImage(videoRef.current, 0, 0);
 
-        // Compress to JPEG (smaller for mobile upload)
-        const imageBase64 = canvasRef.current.toDataURL('image/jpeg', 0.7);
-        setCapturedImage(imageBase64);
+        // Convert canvas to blob (binary, ~33% smaller than base64)
+        canvasRef.current.toBlob(async (blob) => {
+            if (!blob) return;
+            const previewUrl = URL.createObjectURL(blob);
+            setCapturedImage(previewUrl);
 
-        if (flashOn) toggleFlash();
-        stopCamera();
+            if (flashOn) toggleFlash();
+            stopCamera();
 
-        await processAndSend(imageBase64);
+            await processAndSend(blob);
+        }, 'image/jpeg', 0.7);
     };
 
     const handleGalleryPick = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = async () => {
-            const imageBase64 = reader.result as string;
-            setCapturedImage(imageBase64);
-            stopCamera();
-            await processAndSend(imageBase64);
-        };
-        reader.readAsDataURL(file);
+        const previewUrl = URL.createObjectURL(file);
+        setCapturedImage(previewUrl);
+        stopCamera();
+        processAndSend(file);
     };
 
-    const processAndSend = async (imageBase64: string) => {
+    const processAndSend = async (imageBlob: Blob) => {
         // 1. Save delivery immediately as "processing"
         const deliveryId = await db.deliveries.add({
             amount: 0,
@@ -123,19 +122,19 @@ const Scanner: React.FC = () => {
         navigate('/');
 
         // 3. Send to webhook in background (fire and forget)
-        sendToWebhook(imageBase64, deliveryId as number);
+        sendToWebhook(imageBlob, deliveryId as number);
     };
 
-    const sendToWebhook = async (imageBase64: string, deliveryId: number) => {
+    const sendToWebhook = async (imageBlob: Blob, deliveryId: number) => {
         try {
+            const formData = new FormData();
+            formData.append('image', imageBlob, 'comanda.jpg');
+            formData.append('deliveryId', String(deliveryId));
+            formData.append('timestamp', new Date().toISOString());
+
             const response = await fetch(WEBHOOK_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    image: imageBase64,
-                    deliveryId: deliveryId,
-                    timestamp: new Date().toISOString()
-                })
+                body: formData
             });
 
             if (response.ok) {
