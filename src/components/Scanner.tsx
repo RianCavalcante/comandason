@@ -11,8 +11,10 @@ const Scanner: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isStreamActive, setIsStreamActive] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [ocrProgress, setOcrProgress] = useState(0);
     const [capturedImage, setCapturedImage] = useState<string | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
+    const [rawText, setRawText] = useState('');
 
     // Data state
     const [scannedData, setScannedData] = useState<{ amount: number | null, clientName: string, address: string }>({
@@ -28,7 +30,11 @@ const Scanner: React.FC = () => {
     const startCamera = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'environment' }
+                video: {
+                    facingMode: 'environment',
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
+                }
             });
 
             if (videoRef.current) {
@@ -39,11 +45,10 @@ const Scanner: React.FC = () => {
             // Check for flashlight capability
             const track = stream.getVideoTracks()[0];
             const capabilities = track.getCapabilities();
-            // @ts-ignore - torch is not in standard types sometimes but works
+            // @ts-ignore
             if (capabilities.torch) {
                 setHasFlash(true);
             }
-
         } catch (err) {
             console.error("Error accessing camera:", err);
             alert("Erro ao acessar a câmera. Verifique as permissões.");
@@ -53,9 +58,7 @@ const Scanner: React.FC = () => {
     const stopCamera = () => {
         if (videoRef.current && videoRef.current.srcObject) {
             const stream = videoRef.current.srcObject as MediaStream;
-            stream.getTracks().forEach(track => {
-                track.stop();
-            });
+            stream.getTracks().forEach(track => track.stop());
             setIsStreamActive(false);
         }
     };
@@ -64,7 +67,6 @@ const Scanner: React.FC = () => {
         if (videoRef.current && videoRef.current.srcObject) {
             const stream = videoRef.current.srcObject as MediaStream;
             const track = stream.getVideoTracks()[0];
-
             try {
                 await track.applyConstraints({
                     advanced: [{ torch: !flashOn } as any]
@@ -81,6 +83,41 @@ const Scanner: React.FC = () => {
         return () => stopCamera();
     }, []);
 
+    /**
+     * Pre-process: increase contrast and convert to grayscale
+     * for better OCR accuracy on thermal/printed receipts.
+     */
+    const preprocessImage = (canvas: HTMLCanvasElement): string => {
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return canvas.toDataURL('image/png');
+
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+
+        for (let i = 0; i < data.length; i += 4) {
+            // Grayscale conversion (luminance method)
+            const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+
+            // Increase contrast (stretch the histogram)
+            const contrast = 1.5; // 1.0 = normal, >1 = more contrast
+            const factor = (259 * (contrast * 128 + 255)) / (255 * (259 - contrast * 128));
+            let enhanced = factor * (gray - 128) + 128;
+            enhanced = Math.max(0, Math.min(255, enhanced));
+
+            // Simple threshold to binarize (black/white)
+            const threshold = 140;
+            const bw = enhanced > threshold ? 255 : 0;
+
+            data[i] = bw;     // R
+            data[i + 1] = bw; // G
+            data[i + 2] = bw; // B
+            // Alpha stays the same
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+        return canvas.toDataURL('image/png');
+    };
+
     const captureImage = () => {
         if (videoRef.current && canvasRef.current) {
             const context = canvasRef.current.getContext('2d');
@@ -88,29 +125,41 @@ const Scanner: React.FC = () => {
                 canvasRef.current.width = videoRef.current.videoWidth;
                 canvasRef.current.height = videoRef.current.videoHeight;
                 context.drawImage(videoRef.current, 0, 0);
-                const imageUrl = canvasRef.current.toDataURL('image/png');
-                setCapturedImage(imageUrl);
 
-                // Turn off flash if on
+                // Show the raw capture first
+                const rawImageUrl = canvasRef.current.toDataURL('image/png');
+                setCapturedImage(rawImageUrl);
+
+                // Pre-process for OCR
+                const processedImageUrl = preprocessImage(canvasRef.current);
+
                 if (flashOn) toggleFlash();
-
                 stopCamera();
-                processImage(imageUrl);
+                processImage(processedImageUrl);
             }
         }
     };
 
     const processImage = async (imageUrl: string) => {
         setIsProcessing(true);
+        setOcrProgress(0);
         try {
             const result = await Tesseract.recognize(
                 imageUrl,
-                'eng',
-                { logger: m => console.log(m) }
+                'por', // Portuguese!
+                {
+                    logger: m => {
+                        if (m.status === 'recognizing text') {
+                            setOcrProgress(Math.round(m.progress * 100));
+                        }
+                    }
+                }
             );
 
             const { data: { text } } = result;
             console.log("OCR Text:", text);
+            setRawText(text);
+
             const parsed = parseDeliveryFee(text);
 
             setScannedData({
@@ -134,9 +183,9 @@ const Scanner: React.FC = () => {
             amount: data.amount,
             clientName: data.clientName,
             address: data.address,
-            status: 'pending', // Default status
+            status: 'pending',
             date: new Date(),
-            rawText: 'scanned',
+            rawText: rawText, // Save actual OCR text
             createdAt: new Date()
         });
         setModalOpen(false);
@@ -146,6 +195,7 @@ const Scanner: React.FC = () => {
     const handleCancel = () => {
         setModalOpen(false);
         setCapturedImage(null);
+        setRawText('');
         startCamera();
     };
 
@@ -187,12 +237,23 @@ const Scanner: React.FC = () => {
                     </button>
                 )}
 
-                {isProcessing && <div className="processing-indicator">Processando...</div>}
+                {isProcessing && (
+                    <div className="processing-indicator">
+                        <div className="processing-text">
+                            <span>Lendo comanda...</span>
+                            <span className="progress-pct">{ocrProgress}%</span>
+                        </div>
+                        <div className="progress-bar-bg">
+                            <div className="progress-bar-fill" style={{ width: `${ocrProgress}%` }} />
+                        </div>
+                    </div>
+                )}
             </div>
 
             <ConfirmModal
                 isOpen={modalOpen}
                 initialData={scannedData}
+                rawText={rawText}
                 onConfirm={handleConfirm}
                 onCancel={handleCancel}
             />

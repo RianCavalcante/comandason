@@ -9,16 +9,19 @@ interface ConfirmData {
 interface ConfirmModalProps {
     isOpen: boolean;
     initialData: ConfirmData;
+    rawText?: string;
     onConfirm: (data: { amount: number, clientName: string, address: string }) => void;
     onCancel: () => void;
 }
 
-const ConfirmModal: React.FC<ConfirmModalProps> = ({ isOpen, initialData, onConfirm, onCancel }) => {
+const ConfirmModal: React.FC<ConfirmModalProps> = ({ isOpen, initialData, rawText, onConfirm, onCancel }) => {
     const [data, setData] = useState<ConfirmData>({ amount: null, clientName: '', address: '' });
+    const [showRaw, setShowRaw] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
             setData(initialData);
+            setShowRaw(false);
         }
     }, [isOpen, initialData]);
 
@@ -58,27 +61,43 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({ isOpen, initialData, onConf
                     </div>
 
                     {/* Nome do Cliente */}
-                    <div style={{ marginBottom: '15px' }}>
-                        <label style={{ display: 'block', color: 'var(--color-text-muted)', marginBottom: '5px', fontSize: '0.9rem' }}>Cliente</label>
+                    <div className="modal-field">
+                        <label>Cliente</label>
                         <input
                             type="text"
                             value={data.clientName}
                             onChange={(e) => setData({ ...data, clientName: e.target.value })}
-                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+                            className="modal-input"
                             placeholder="Nome do Cliente"
                         />
                     </div>
 
                     {/* Endereço */}
-                    <div style={{ marginBottom: '25px' }}>
-                        <label style={{ display: 'block', color: 'var(--color-text-muted)', marginBottom: '5px', fontSize: '0.9rem' }}>Endereço</label>
+                    <div className="modal-field">
+                        <label>Endereço</label>
                         <textarea
                             value={data.address}
                             onChange={(e) => setData({ ...data, address: e.target.value })}
-                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.2)', color: 'white', minHeight: '60px', fontFamily: 'inherit' }}
+                            className="modal-input modal-textarea"
                             placeholder="Endereço da entrega"
                         />
                     </div>
+
+                    {/* Texto bruto do OCR */}
+                    {rawText && (
+                        <div className="ocr-raw-section">
+                            <button
+                                type="button"
+                                className="btn-toggle-raw"
+                                onClick={() => setShowRaw(!showRaw)}
+                            >
+                                {showRaw ? '▼ Ocultar texto lido' : '▶ Ver texto lido pelo OCR'}
+                            </button>
+                            {showRaw && (
+                                <pre className="ocr-raw-text">{rawText}</pre>
+                            )}
+                        </div>
+                    )}
 
                     <div className="modal-actions">
                         <button type="button" onClick={onCancel} className="btn-cancel">Cancelar</button>
