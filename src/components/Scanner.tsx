@@ -1,6 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { X, Zap, ZapOff } from 'lucide-react';
-import ConfirmModal from './ConfirmModal';
 import { db } from '../db';
 import { useNavigate } from 'react-router-dom';
 
@@ -10,16 +9,7 @@ const Scanner: React.FC = () => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isStreamActive, setIsStreamActive] = useState(false);
-    const [isProcessing, setIsProcessing] = useState(false);
     const [capturedImage, setCapturedImage] = useState<string | null>(null);
-    const [modalOpen, setModalOpen] = useState(false);
-    const [rawText, setRawText] = useState('');
-    const [webhookSent, setWebhookSent] = useState(false);
-
-    // Data state
-    const [scannedData, setScannedData] = useState<{ amount: number | null, clientName: string, address: string }>({
-        amount: null, clientName: '', address: ''
-    });
 
     // Flashlight state
     const [hasFlash, setHasFlash] = useState(false);
@@ -82,88 +72,78 @@ const Scanner: React.FC = () => {
         return () => stopCamera();
     }, []);
 
-    const captureImage = () => {
-        if (videoRef.current && canvasRef.current) {
-            const context = canvasRef.current.getContext('2d');
-            if (context) {
-                canvasRef.current.width = videoRef.current.videoWidth;
-                canvasRef.current.height = videoRef.current.videoHeight;
-                context.drawImage(videoRef.current, 0, 0);
+    const captureImage = async () => {
+        if (!videoRef.current || !canvasRef.current) return;
 
-                const imageUrl = canvasRef.current.toDataURL('image/jpeg', 0.85);
-                setCapturedImage(imageUrl);
+        const context = canvasRef.current.getContext('2d');
+        if (!context) return;
 
-                if (flashOn) toggleFlash();
-                stopCamera();
-                sendToWebhook(imageUrl);
-            }
-        }
+        canvasRef.current.width = videoRef.current.videoWidth;
+        canvasRef.current.height = videoRef.current.videoHeight;
+        context.drawImage(videoRef.current, 0, 0);
+
+        // Compress to JPEG (smaller for mobile upload)
+        const imageBase64 = canvasRef.current.toDataURL('image/jpeg', 0.7);
+        setCapturedImage(imageBase64);
+
+        if (flashOn) toggleFlash();
+        stopCamera();
+
+        // 1. Save delivery immediately as "processing"
+        const deliveryId = await db.deliveries.add({
+            amount: 0,
+            clientName: '',
+            address: '',
+            status: 'processing',
+            date: new Date(),
+            rawText: '',
+            createdAt: new Date()
+        });
+
+        // 2. Navigate to dashboard INSTANTLY
+        navigate('/');
+
+        // 3. Send to webhook in background (fire and forget)
+        sendToWebhook(imageBase64, deliveryId as number);
     };
 
-    const sendToWebhook = async (imageBase64: string) => {
-        setIsProcessing(true);
-        setWebhookSent(false);
+    const sendToWebhook = async (imageBase64: string, deliveryId: number) => {
         try {
             const response = await fetch(WEBHOOK_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     image: imageBase64,
+                    deliveryId: deliveryId,
                     timestamp: new Date().toISOString()
                 })
             });
 
-            setWebhookSent(true);
-
-            // If the webhook returns data, try to use it
             if (response.ok) {
                 try {
                     const data = await response.json();
-                    // If n8n returns parsed data, fill the modal
-                    if (data && (data.valor || data.value || data.clientName || data.address)) {
-                        setScannedData({
-                            amount: data.valor ?? data.value ?? null,
-                            clientName: data.clientName || data.cliente || '',
-                            address: data.address || data.endereco || ''
-                        });
-                        setRawText(data.rawText || data.texto || JSON.stringify(data, null, 2));
-                    }
+
+                    // Update delivery with webhook response data
+                    await db.deliveries.update(deliveryId, {
+                        amount: data.valor ?? data.value ?? data.amount ?? 0,
+                        clientName: data.clientName || data.cliente || data.nome || '',
+                        address: data.address || data.endereco || '',
+                        rawText: data.rawText || data.texto || JSON.stringify(data),
+                        status: 'pending' // Move to pending after processing
+                    });
                 } catch {
-                    // Response wasn't JSON — that's fine, just open manual modal
-                    console.log("Webhook response wasn't JSON, opening manual entry.");
+                    // Response wasn't JSON - mark as pending anyway
+                    await db.deliveries.update(deliveryId, { status: 'pending' });
                 }
+            } else {
+                // Webhook error - mark as pending so user can edit manually
+                await db.deliveries.update(deliveryId, { status: 'pending' });
             }
-
-            setModalOpen(true);
-        } catch (err: any) {
+        } catch (err) {
             console.error("Webhook Error:", err);
-            // Even if webhook fails, allow manual entry
-            setModalOpen(true);
-        } finally {
-            setIsProcessing(false);
+            // Network error - mark as pending
+            await db.deliveries.update(deliveryId, { status: 'pending' });
         }
-    };
-
-    const handleConfirm = async (data: { amount: number, clientName: string, address: string }) => {
-        await db.deliveries.add({
-            amount: data.amount,
-            clientName: data.clientName,
-            address: data.address,
-            status: 'pending',
-            date: new Date(),
-            rawText: rawText,
-            createdAt: new Date()
-        });
-        setModalOpen(false);
-        navigate('/');
-    };
-
-    const handleCancel = () => {
-        setModalOpen(false);
-        setCapturedImage(null);
-        setRawText('');
-        setWebhookSent(false);
-        startCamera();
     };
 
     return (
@@ -202,34 +182,7 @@ const Scanner: React.FC = () => {
                         <div className="capture-inner" />
                     </button>
                 )}
-
-                {isProcessing && (
-                    <div className="processing-indicator">
-                        <div className="processing-text">
-                            <span>📡 Enviando para n8n...</span>
-                        </div>
-                        <div className="progress-bar-bg">
-                            <div className="progress-bar-fill progress-bar-animated" />
-                        </div>
-                    </div>
-                )}
-
-                {webhookSent && !isProcessing && !modalOpen && (
-                    <div className="processing-indicator" style={{ background: 'rgba(0,180,80,0.9)' }}>
-                        <div className="processing-text">
-                            <span>✅ Enviado!</span>
-                        </div>
-                    </div>
-                )}
             </div>
-
-            <ConfirmModal
-                isOpen={modalOpen}
-                initialData={scannedData}
-                rawText={rawText}
-                onConfirm={handleConfirm}
-                onCancel={handleCancel}
-            />
         </div>
     );
 };

@@ -7,19 +7,17 @@ interface Delivery {
   rawText: string;
   imagePreview?: string;
   createdAt: Date;
-  // New fields
   clientName?: string;
   address?: string;
-  status: 'pending' | 'delivered' | 'canceled';
+  status: 'processing' | 'pending' | 'delivered' | 'canceled';
 }
 
 const db = new Dexie('ComandasonDB') as Dexie & {
   deliveries: EntityTable<Delivery, 'id'>;
 };
 
-// Schema definition
-db.version(2).stores({
-  deliveries: '++id, amount, date, status, createdAt' // Added status to index
+db.version(3).stores({
+  deliveries: '++id, amount, date, status, createdAt'
 });
 
 export type { Delivery };

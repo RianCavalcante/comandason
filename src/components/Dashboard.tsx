@@ -1,17 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { db, type Delivery } from '../db';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Plus, Trash2, Check, X, MapPin, User, Package, Clock } from 'lucide-react';
+import { Plus, Trash2, Check, X, MapPin, User, Package, Clock, Loader } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard: React.FC = () => {
     const [todaysTotal, setTodaysTotal] = useState(0);
+    const [processingDeliveries, setProcessingDeliveries] = useState<Delivery[]>([]);
     const [pendingDeliveries, setPendingDeliveries] = useState<Delivery[]>([]);
     const [completedDeliveries, setCompletedDeliveries] = useState<Delivery[]>([]);
     const navigate = useNavigate();
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         const now = new Date();
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -21,23 +22,29 @@ const Dashboard: React.FC = () => {
             .toArray();
 
         const total = todayDeliveries
-            .filter(d => d.status !== 'canceled')
+            .filter(d => d.status !== 'canceled' && d.status !== 'processing')
             .reduce((sum, d) => sum + d.amount, 0);
 
         setTodaysTotal(total);
 
+        const processing = todayDeliveries.filter(d => d.status === 'processing');
         const pending = todayDeliveries.filter(d => d.status === 'pending');
         const completed = todayDeliveries
-            .filter(d => d.status !== 'pending')
+            .filter(d => d.status === 'delivered' || d.status === 'canceled')
             .sort((a, b) => b.date.getTime() - a.date.getTime());
 
+        setProcessingDeliveries(processing);
         setPendingDeliveries(pending);
         setCompletedDeliveries(completed);
-    };
+    }, []);
 
     useEffect(() => {
         loadData();
-    }, []);
+
+        // Auto-refresh every 2 seconds to catch webhook updates
+        const interval = setInterval(loadData, 2000);
+        return () => clearInterval(interval);
+    }, [loadData]);
 
     const handleStatusChange = async (id: number, newStatus: 'delivered' | 'canceled') => {
         await db.deliveries.update(id, { status: newStatus });
@@ -87,6 +94,42 @@ const Dashboard: React.FC = () => {
                     </div>
                 </div>
             </header>
+
+            {/* Processing Deliveries (waiting for n8n) */}
+            {processingDeliveries.length > 0 && (
+                <section className="section-container">
+                    <div className="section-header">
+                        <h3 className="section-title text-blue">Processando 🤖</h3>
+                        <span className="section-count">{processingDeliveries.length}</span>
+                    </div>
+                    <div className="delivery-grid">
+                        {processingDeliveries.map(d => (
+                            <div key={d.id} className="delivery-card processing-card">
+                                <div className="card-header">
+                                    <div className="delivery-time-badge">
+                                        <Clock size={12} />
+                                        {format(d.date, 'HH:mm')}
+                                    </div>
+                                    <Loader size={18} className="spinner" />
+                                </div>
+                                <div className="card-body">
+                                    <div className="info-row">
+                                        <span className="processing-label pulse-text">Validando comanda...</span>
+                                    </div>
+                                </div>
+                                <div className="card-actions">
+                                    <button
+                                        onClick={() => handleDelete(d.id)}
+                                        className="btn-action btn-danger"
+                                    >
+                                        <X size={18} /> Cancelar
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            )}
 
             {/* Pending Deliveries Section */}
             {pendingDeliveries.length > 0 && (
@@ -149,7 +192,7 @@ const Dashboard: React.FC = () => {
                     <h3 className="section-title">Concluídas</h3>
                 </div>
 
-                {completedDeliveries.length === 0 && pendingDeliveries.length === 0 ? (
+                {completedDeliveries.length === 0 && pendingDeliveries.length === 0 && processingDeliveries.length === 0 ? (
                     <div className="empty-state-card">
                         <Package size={48} />
                         <p>Nenhuma entrega hoje.<br />Bora rodar!</p>
