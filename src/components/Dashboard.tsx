@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { db, type Delivery } from '../db';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Plus, Trash2, Check, X, MapPin, User, Package, Clock, Loader } from 'lucide-react';
+import { Plus, Trash2, Check, X, MapPin, User, Package, Clock, Loader, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard: React.FC = () => {
@@ -67,8 +67,13 @@ const Dashboard: React.FC = () => {
                         <h1 className="app-title">Comandason</h1>
                         <p className="date-display">{format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR })}</p>
                     </div>
-                    <div className="app-logo">
-                        <img src="/logo.png" alt="Comandason" />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <button onClick={loadData} className="btn-refresh" title="Atualizar">
+                            <RefreshCw size={20} />
+                        </button>
+                        <div className="app-logo">
+                            <img src="/logo.png" alt="Comandason" />
+                        </div>
                     </div>
                 </div>
 

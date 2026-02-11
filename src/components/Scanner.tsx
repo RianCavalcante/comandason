@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { X, Zap, ZapOff } from 'lucide-react';
+import { X, Zap, ZapOff, ImagePlus } from 'lucide-react';
 import { db } from '../db';
 import { useNavigate } from 'react-router-dom';
 
@@ -8,6 +8,7 @@ const WEBHOOK_URL = 'https://n8n-webhook.nubuwf.easypanel.host/webhook/imagemurl
 const Scanner: React.FC = () => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [isStreamActive, setIsStreamActive] = useState(false);
     const [capturedImage, setCapturedImage] = useState<string | null>(null);
 
@@ -89,6 +90,24 @@ const Scanner: React.FC = () => {
         if (flashOn) toggleFlash();
         stopCamera();
 
+        await processAndSend(imageBase64);
+    };
+
+    const handleGalleryPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async () => {
+            const imageBase64 = reader.result as string;
+            setCapturedImage(imageBase64);
+            stopCamera();
+            await processAndSend(imageBase64);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const processAndSend = async (imageBase64: string) => {
         // 1. Save delivery immediately as "processing"
         const deliveryId = await db.deliveries.add({
             amount: 0,
@@ -178,10 +197,23 @@ const Scanner: React.FC = () => {
                 )}
 
                 {!capturedImage && (
-                    <button onClick={captureImage} className="btn-capture" disabled={!isStreamActive}>
-                        <div className="capture-inner" />
-                    </button>
+                    <>
+                        <button onClick={() => fileInputRef.current?.click()} className="btn-gallery">
+                            <ImagePlus size={22} />
+                        </button>
+                        <button onClick={captureImage} className="btn-capture" disabled={!isStreamActive}>
+                            <div className="capture-inner" />
+                        </button>
+                    </>
                 )}
+
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={handleGalleryPick}
+                />
             </div>
         </div>
     );

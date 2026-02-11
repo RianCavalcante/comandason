@@ -227,6 +227,45 @@ button {
 }
 .btn-capture:active .capture-inner { transform: scale(0.9); }
 
+.btn-gallery {
+  position: absolute;
+  bottom: 40px;
+  left: 40px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.btn-gallery:active {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.btn-refresh {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-refresh:active {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
 .btn-icon {
   position: absolute;
   top: 20px;
