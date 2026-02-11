@@ -60,8 +60,8 @@ const Dashboard: React.FC = () => {
                         <h1 className="app-title">Comandason</h1>
                         <p className="date-display">{format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR })}</p>
                     </div>
-                    <div className="user-avatar">
-                        <User size={20} />
+                    <div className="app-logo">
+                        <img src="/logo.png" alt="Comandason" />
                     </div>
                 </div>
 
