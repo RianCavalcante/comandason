@@ -1,7 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import Tesseract from 'tesseract.js';
 import { X, Zap, ZapOff } from 'lucide-react';
-import { parseDeliveryFee } from '../utils/ocrParser';
 import ConfirmModal from './ConfirmModal';
 import { db } from '../db';
 import { useNavigate } from 'react-router-dom';
@@ -11,7 +9,6 @@ const Scanner: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isStreamActive, setIsStreamActive] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [ocrProgress, setOcrProgress] = useState(0);
     const [capturedImage, setCapturedImage] = useState<string | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [rawText, setRawText] = useState('');
@@ -42,7 +39,6 @@ const Scanner: React.FC = () => {
                 setIsStreamActive(true);
             }
 
-            // Check for flashlight capability
             const track = stream.getVideoTracks()[0];
             const capabilities = track.getCapabilities();
             // @ts-ignore
@@ -83,41 +79,6 @@ const Scanner: React.FC = () => {
         return () => stopCamera();
     }, []);
 
-    /**
-     * Pre-process: increase contrast and convert to grayscale
-     * for better OCR accuracy on thermal/printed receipts.
-     */
-    const preprocessImage = (canvas: HTMLCanvasElement): string => {
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return canvas.toDataURL('image/png');
-
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
-
-        for (let i = 0; i < data.length; i += 4) {
-            // Grayscale conversion (luminance method)
-            const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-
-            // Increase contrast (stretch the histogram)
-            const contrast = 1.5; // 1.0 = normal, >1 = more contrast
-            const factor = (259 * (contrast * 128 + 255)) / (255 * (259 - contrast * 128));
-            let enhanced = factor * (gray - 128) + 128;
-            enhanced = Math.max(0, Math.min(255, enhanced));
-
-            // Simple threshold to binarize (black/white)
-            const threshold = 140;
-            const bw = enhanced > threshold ? 255 : 0;
-
-            data[i] = bw;     // R
-            data[i + 1] = bw; // G
-            data[i + 2] = bw; // B
-            // Alpha stays the same
-        }
-
-        ctx.putImageData(imageData, 0, 0);
-        return canvas.toDataURL('image/png');
-    };
-
     const captureImage = () => {
         if (videoRef.current && canvasRef.current) {
             const context = canvasRef.current.getContext('2d');
@@ -126,51 +87,44 @@ const Scanner: React.FC = () => {
                 canvasRef.current.height = videoRef.current.videoHeight;
                 context.drawImage(videoRef.current, 0, 0);
 
-                // Show the raw capture first
-                const rawImageUrl = canvasRef.current.toDataURL('image/png');
-                setCapturedImage(rawImageUrl);
-
-                // Pre-process for OCR
-                const processedImageUrl = preprocessImage(canvasRef.current);
+                // Use JPEG for smaller file size (faster upload)
+                const imageUrl = canvasRef.current.toDataURL('image/jpeg', 0.85);
+                setCapturedImage(imageUrl);
 
                 if (flashOn) toggleFlash();
                 stopCamera();
-                processImage(processedImageUrl);
+                processImage(imageUrl);
             }
         }
     };
 
     const processImage = async (imageUrl: string) => {
         setIsProcessing(true);
-        setOcrProgress(0);
         try {
-            const result = await Tesseract.recognize(
-                imageUrl,
-                'por', // Portuguese!
-                {
-                    logger: m => {
-                        if (m.status === 'recognizing text') {
-                            setOcrProgress(Math.round(m.progress * 100));
-                        }
-                    }
-                }
-            );
+            const response = await fetch('/api/ocr', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: imageUrl })
+            });
 
-            const { data: { text } } = result;
-            console.log("OCR Text:", text);
-            setRawText(text);
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || 'Erro na API');
+            }
 
-            const parsed = parseDeliveryFee(text);
+            const data = await response.json();
+            console.log("OCR Result:", data);
 
+            setRawText(data.rawText || '');
             setScannedData({
-                amount: parsed.value,
-                clientName: parsed.clientName,
-                address: parsed.address
+                amount: data.value,
+                clientName: data.clientName || '',
+                address: data.address || ''
             });
             setModalOpen(true);
-        } catch (err) {
+        } catch (err: any) {
             console.error("OCR Error:", err);
-            alert("Erro ao processar imagem.");
+            alert("Erro ao processar imagem: " + err.message);
             setCapturedImage(null);
             startCamera();
         } finally {
@@ -185,7 +139,7 @@ const Scanner: React.FC = () => {
             address: data.address,
             status: 'pending',
             date: new Date(),
-            rawText: rawText, // Save actual OCR text
+            rawText: rawText,
             createdAt: new Date()
         });
         setModalOpen(false);
@@ -214,7 +168,6 @@ const Scanner: React.FC = () => {
                     <X size={24} />
                 </button>
 
-                {/* Flashlight Button */}
                 {!capturedImage && hasFlash && (
                     <button
                         onClick={toggleFlash}
@@ -240,11 +193,10 @@ const Scanner: React.FC = () => {
                 {isProcessing && (
                     <div className="processing-indicator">
                         <div className="processing-text">
-                            <span>Lendo comanda...</span>
-                            <span className="progress-pct">{ocrProgress}%</span>
+                            <span>🤖 IA lendo comanda...</span>
                         </div>
                         <div className="progress-bar-bg">
-                            <div className="progress-bar-fill" style={{ width: `${ocrProgress}%` }} />
+                            <div className="progress-bar-fill progress-bar-animated" />
                         </div>
                     </div>
                 )}

@@ -278,6 +278,16 @@ button {
   transition: width 0.3s ease;
 }
 
+.progress-bar-animated {
+  width: 40% !important;
+  animation: indeterminate 1.2s ease-in-out infinite;
+}
+
+@keyframes indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
+}
+
 /* Modal Field Styles */
 .modal-field {
   margin-bottom: 15px;
