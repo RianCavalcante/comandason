@@ -5,6 +5,7 @@ import Dashboard from './components/Dashboard';
 import Scanner from './components/Scanner';
 import History from './components/History';
 import SplashScreen from './components/SplashScreen';
+import ThankYou from './components/ThankYou';
 
 const Navigation = () => {
   const location = useLocation();
@@ -37,6 +38,7 @@ function App() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/scanner" element={<Scanner />} />
         <Route path="/history" element={<History />} />
+        <Route path="/agradecimento" element={<ThankYou />} />
       </Routes>
       <Navigation />
     </Router>
