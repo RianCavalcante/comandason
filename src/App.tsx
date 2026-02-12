@@ -9,7 +9,7 @@ import ThankYou from './components/ThankYou';
 
 const Navigation = () => {
   const location = useLocation();
-  if (location.pathname === '/scanner') return null;
+  if (location.pathname === '/scanner' || location.pathname === '/agradecimento') return null;
 
   return (
     <nav className="bottom-nav">
@@ -26,7 +26,9 @@ const Navigation = () => {
 };
 
 function App() {
-  const [showSplash, setShowSplash] = useState(true);
+  // Check if we are on the thank you page to skip splash
+  const isThankYouPage = window.location.pathname === '/agradecimento';
+  const [showSplash, setShowSplash] = useState(!isThankYouPage);
 
   if (showSplash) {
     return <SplashScreen onFinish={() => setShowSplash(false)} />;
