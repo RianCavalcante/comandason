@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { X, Zap, ZapOff, ImagePlus } from 'lucide-react';
+import { X, Zap, ZapOff, ImagePlus, Loader2 } from 'lucide-react';
 import CustomModal from './CustomModal';
 import { db } from '../db';
 import { sendToWebhook } from '../utils/webhookService';
@@ -17,7 +17,9 @@ const Scanner: React.FC = () => {
 
     // Custom Modal state
     const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
+    const [errorTitle, setErrorTitle] = useState('Erro');
     const [errorMessage, setErrorMessage] = useState('');
+    const [isProcessing, setIsProcessing] = useState(false);
 
     const navigate = useNavigate();
 
@@ -44,6 +46,7 @@ const Scanner: React.FC = () => {
             }
         } catch (err) {
             console.error("Error accessing camera:", err);
+            setErrorTitle("Erro de Câmera");
             setErrorMessage("Não foi possível acessar a câmera. Verifique se deu as permissões necessárias e tente novamente.");
             setIsErrorModalOpen(true);
         }
@@ -104,6 +107,8 @@ const Scanner: React.FC = () => {
     };
 
     const processAndSend = async (imageBlob: Blob) => {
+        setIsProcessing(true);
+
         // 1. Save delivery immediately as "processing"
         const deliveryId = await db.deliveries.add({
             amount: 0,
@@ -115,11 +120,30 @@ const Scanner: React.FC = () => {
             createdAt: new Date()
         });
 
-        // 2. Navigate to dashboard INSTANTLY
-        navigate('/');
+        // 2. Fire webhook and wait for result
+        const result = await sendToWebhook(imageBlob, deliveryId as number);
 
-        // 3. Fire webhook in background (runs in separate module, survives unmount)
-        sendToWebhook(imageBlob, deliveryId as number);
+        setIsProcessing(false);
+
+        if (result.success) {
+            navigate('/');
+        } else {
+            // On failure, maybe delete the temp delivery? 
+            // For now, we'll keep it as "processing" or maybe "canceled" if we want to clean up.
+            // Let's delete it so it doesn't clutter the dashboard.
+            await db.deliveries.delete(deliveryId as number);
+
+            setErrorTitle("Falha na Leitura");
+            setErrorMessage(result.message || "O scanner falhou ao ler a comanda. Verifique a iluminação e tente novamente.");
+            setIsErrorModalOpen(true);
+        }
+    };
+
+    const handleRetry = () => {
+        setIsErrorModalOpen(false);
+        setErrorTitle('Erro');
+        setErrorMessage('');
+        startCamera();
     };
 
     return (
@@ -159,11 +183,21 @@ const Scanner: React.FC = () => {
             <CustomModal
                 isOpen={isErrorModalOpen}
                 onClose={() => setIsErrorModalOpen(false)}
-                title="Erro de Câmera"
+                onConfirm={handleRetry}
+                title={errorTitle}
                 message={errorMessage}
                 type="alert"
+                confirmText="Tentar Novamente"
                 variant="danger"
             />
+
+            {/* Loading Overlay */}
+            {isProcessing && (
+                <div className="scanner-loading-overlay">
+                    <Loader2 size={48} className="spinner text-primary" />
+                    <p>Processando comanda...</p>
+                </div>
+            )}
 
             {/* Bottom Bar: Gallery and Shutter */}
             <div className="scanner-bottom-bar">

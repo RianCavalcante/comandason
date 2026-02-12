@@ -9,6 +9,8 @@ interface CustomModalProps {
     message: string;
     type?: 'alert' | 'confirm';
     variant?: 'danger' | 'info' | 'success';
+    confirmText?: string;
+    cancelText?: string;
 }
 
 const CustomModal: React.FC<CustomModalProps> = ({
@@ -18,7 +20,9 @@ const CustomModal: React.FC<CustomModalProps> = ({
     title,
     message,
     type = 'alert',
-    variant = 'info'
+    variant = 'info',
+    confirmText,
+    cancelText
 }) => {
     if (!isOpen) return null;
 
@@ -43,7 +47,7 @@ const CustomModal: React.FC<CustomModalProps> = ({
                 <div className="modal-actions-custom">
                     {type === 'confirm' && (
                         <button className="btn-modal-cancel" onClick={onClose}>
-                            Cancelar
+                            {cancelText || 'Cancelar'}
                         </button>
                     )}
                     <button
@@ -53,7 +57,7 @@ const CustomModal: React.FC<CustomModalProps> = ({
                             onClose();
                         }}
                     >
-                        {type === 'confirm' ? 'Confirmar' : 'OK'}
+                        {confirmText || (type === 'confirm' ? 'Confirmar' : 'OK')}
                     </button>
                 </div>
             </div>
