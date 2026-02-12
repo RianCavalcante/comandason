@@ -1,12 +1,13 @@
 :root {
-  --color-bg: #0f172a; /* Dark Blue/Slate */
-  --color-bg-card: #1e293b; /* Slightly lighter slate */
-  --color-primary: #10b981; /* Neon Green / Emerald */
-  --color-text: #f8fafc; /* Off-white text */
+  --color-bg: #0a0e1a;
+  --color-bg-card: #151b2e;
+  --color-primary: #10b981;
+  --color-text: #f1f5f9;
   --color-text-muted: #94a3b8;
   --color-danger: #ef4444;
   
-  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
   
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
   --radius: 12px;
@@ -21,8 +22,11 @@ body {
   background-color: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
+  font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
+  letter-spacing: -0.01em;
 }
 
 #root {
@@ -518,13 +522,14 @@ button {
 
 /* Header Card */
 .dashboard-header-card {
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  border-radius: 20px;
-  padding: 20px;
-  margin-bottom: 24px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  background: linear-gradient(145deg, #151b2e 0%, #0d1220 100%);
+  border-radius: 24px;
+  padding: 22px;
+  margin-bottom: 28px;
+  box-shadow: 0 12px 40px -8px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.04);
   position: relative;
   overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .dashboard-header-card::before {
@@ -546,18 +551,22 @@ button {
 }
 
 .app-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #fff;
+  font-size: 1.3rem;
+  font-weight: 800;
   margin: 0;
   letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .date-display {
-  font-size: 0.85rem;
-  color: #94a3b8;
-  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: #475569;
+  margin: 6px 0 0;
   text-transform: capitalize;
+  font-weight: 500;
 }
 
 .app-logo {
@@ -597,18 +606,22 @@ button {
 }
 
 .daily-total .currency {
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: var(--color-primary);
-  opacity: 0.8;
+  opacity: 0.7;
+  font-weight: 600;
 }
 
 .daily-total .amount {
-  font-size: 2.2rem;
+  font-family: var(--font-mono);
+  font-size: 2.4rem;
   font-weight: 800;
-  color: #fff;
   line-height: 1;
-  letter-spacing: -1px;
-  text-shadow: none;
+  letter-spacing: -1.5px;
+  background: linear-gradient(135deg, #fff 20%, #10b981);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .mini-stat-group {
@@ -648,10 +661,14 @@ button {
 }
 
 .section-title {
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 700;
   color: #e2e8f0;
   margin: 0;
+  letter-spacing: -0.3px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .section-count {
@@ -765,13 +782,14 @@ button {
 }
 
 .amount-value {
-  font-size: 1.6rem;
+  font-family: var(--font-mono);
+  font-size: 1.75rem;
   font-weight: 800;
   background: linear-gradient(135deg, #fff 30%, #94a3b8);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  letter-spacing: -0.5px;
+  letter-spacing: -1px;
 }
 
 /* Info chips */
@@ -815,47 +833,52 @@ button {
 .btn-deliver {
   flex: 1;
   border: none;
-  padding: 13px;
-  border-radius: 12px;
+  padding: 14px;
+  border-radius: 14px;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 7px;
   cursor: pointer;
-  min-height: 48px;
-  background: linear-gradient(135deg, #059669, #10b981);
+  min-height: 50px;
+  background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%);
   color: #fff;
-  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.25);
-  transition: all 0.2s;
+  box-shadow:
+    0 6px 20px rgba(16, 185, 129, 0.3),
+    0 1px 0 rgba(255, 255, 255, 0.15) inset;
+  transition: all 0.15s ease;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  font-family: var(--font-sans);
 }
 
 .btn-deliver:active {
   transform: scale(0.97);
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
 }
 
 .btn-cancel {
   border: none;
-  padding: 13px;
-  border-radius: 12px;
+  padding: 14px;
+  border-radius: 14px;
   font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  min-height: 48px;
-  width: 52px;
-  background: rgba(239, 68, 68, 0.1);
+  min-height: 50px;
+  width: 54px;
+  background: rgba(248, 113, 113, 0.08);
   color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.15);
-  transition: all 0.2s;
+  border: 1px solid rgba(248, 113, 113, 0.12);
+  transition: all 0.15s ease;
 }
 
 .btn-cancel:active {
-  background: rgba(239, 68, 68, 0.2);
-  transform: scale(0.95);
+  background: rgba(248, 113, 113, 0.18);
+  transform: scale(0.93);
 }
 
 /* Processing card premium */

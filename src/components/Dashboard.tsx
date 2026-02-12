@@ -2,8 +2,17 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { db, type Delivery } from '../db';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Plus, Trash2, Check, X, MapPin, User, Package, Clock, Loader, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, Check, XCircle, MapPin, User, Package, Clock, Loader, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
+const MotoIcon = ({ size = 18, className = '' }: { size?: number; className?: string }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <circle cx="5" cy="17" r="3" />
+        <circle cx="19" cy="17" r="3" />
+        <path d="M12 17h-2l-3.5-7H11l1 2h4l2-4h3l-3.5 7H14" />
+        <path d="M10 5h4" />
+    </svg>
+);
 
 const Dashboard: React.FC = () => {
     const [todaysTotal, setTodaysTotal] = useState(0);
@@ -104,7 +113,7 @@ const Dashboard: React.FC = () => {
             {processingDeliveries.length > 0 && (
                 <section className="section-container">
                     <div className="section-header">
-                        <h3 className="section-title text-blue">Processando 🤖</h3>
+                        <h3 className="section-title text-blue">Processando</h3>
                         <span className="section-count">{processingDeliveries.length}</span>
                     </div>
                     <div className="delivery-grid">
@@ -127,7 +136,7 @@ const Dashboard: React.FC = () => {
                                             onClick={() => handleDelete(d.id)}
                                             className="btn-cancel" style={{ flex: 1 }}
                                         >
-                                            <X size={18} /> Cancelar
+                                            <XCircle size={18} /> Cancelar
                                         </button>
                                     </div>
                                 </div>
@@ -141,7 +150,7 @@ const Dashboard: React.FC = () => {
             {pendingDeliveries.length > 0 && (
                 <section className="section-container">
                     <div className="section-header">
-                        <h3 className="section-title text-yellow">Em Rota 🛵</h3>
+                        <h3 className="section-title text-yellow"><MotoIcon size={18} /> Em Rota</h3>
                         <span className="section-count">{pendingDeliveries.length}</span>
                     </div>
                     <div className="delivery-grid">
@@ -182,13 +191,13 @@ const Dashboard: React.FC = () => {
                                             onClick={() => handleStatusChange(d.id, 'delivered')}
                                             className="btn-deliver"
                                         >
-                                            <Check size={18} /> Entregue
+                                            <CheckCircle2 size={18} /> Entregue
                                         </button>
                                         <button
                                             onClick={() => handleStatusChange(d.id, 'canceled')}
                                             className="btn-cancel"
                                         >
-                                            <X size={18} />
+                                            <XCircle size={18} />
                                         </button>
                                     </div>
                                 </div>
