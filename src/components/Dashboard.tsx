@@ -110,25 +110,26 @@ const Dashboard: React.FC = () => {
                     <div className="delivery-grid">
                         {processingDeliveries.map(d => (
                             <div key={d.id} className="delivery-card processing-card">
-                                <div className="card-header">
-                                    <div className="delivery-time-badge">
-                                        <Clock size={12} />
-                                        {format(d.date, 'HH:mm')}
+                                <div className="card-accent" />
+                                <div className="card-content">
+                                    <div className="card-top-row">
+                                        <div className="delivery-time-badge">
+                                            <Clock size={12} />
+                                            {format(d.date, 'HH:mm')}
+                                        </div>
+                                        <Loader size={20} className="spinner" />
                                     </div>
-                                    <Loader size={18} className="spinner" />
-                                </div>
-                                <div className="card-body">
-                                    <div className="info-row">
+                                    <div className="processing-status">
                                         <span className="processing-label pulse-text">Validando comanda...</span>
                                     </div>
-                                </div>
-                                <div className="card-actions">
-                                    <button
-                                        onClick={() => handleDelete(d.id)}
-                                        className="btn-action btn-danger"
-                                    >
-                                        <X size={18} /> Cancelar
-                                    </button>
+                                    <div className="card-actions-premium">
+                                        <button
+                                            onClick={() => handleDelete(d.id)}
+                                            className="btn-cancel" style={{ flex: 1 }}
+                                        >
+                                            <X size={18} /> Cancelar
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -145,45 +146,51 @@ const Dashboard: React.FC = () => {
                     </div>
                     <div className="delivery-grid">
                         {pendingDeliveries.map(d => (
-                            <div key={d.id} className="delivery-card pending-card">
-                                <div className="card-header">
-                                    <div className="delivery-time-badge">
-                                        <Clock size={12} />
-                                        {format(d.date, 'HH:mm')}
+                            <div key={d.id} className="delivery-card premium-card">
+                                <div className="card-accent" />
+                                <div className="card-content">
+                                    <div className="card-top-row">
+                                        <div className="delivery-time-badge">
+                                            <Clock size={12} />
+                                            {format(d.date, 'HH:mm')}
+                                        </div>
+                                        <div className="delivery-amount-big">
+                                            <span className="currency-small">R$</span>
+                                            <span className="amount-value">{d.amount.toFixed(2)}</span>
+                                        </div>
                                     </div>
-                                    <span className="delivery-amount-highlight">R$ {d.amount.toFixed(2)}</span>
-                                </div>
 
-                                {(d.clientName || d.address) && (
-                                    <div className="card-body">
-                                        {d.clientName && (
-                                            <div className="info-row">
-                                                <User size={14} className="icon-muted" />
-                                                <span>{d.clientName}</span>
-                                            </div>
-                                        )}
-                                        {d.address && (
-                                            <div className="info-row">
-                                                <MapPin size={14} className="icon-muted" />
-                                                <span>{d.address}</span>
-                                            </div>
-                                        )}
+                                    {(d.clientName || d.address) && (
+                                        <div className="card-info-section">
+                                            {d.clientName && (
+                                                <div className="info-chip">
+                                                    <User size={13} />
+                                                    <span>{d.clientName}</span>
+                                                </div>
+                                            )}
+                                            {d.address && (
+                                                <div className="info-chip address-chip">
+                                                    <MapPin size={13} />
+                                                    <span>{d.address}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    <div className="card-actions-premium">
+                                        <button
+                                            onClick={() => handleStatusChange(d.id, 'delivered')}
+                                            className="btn-deliver"
+                                        >
+                                            <Check size={18} /> Entregue
+                                        </button>
+                                        <button
+                                            onClick={() => handleStatusChange(d.id, 'canceled')}
+                                            className="btn-cancel"
+                                        >
+                                            <X size={18} />
+                                        </button>
                                     </div>
-                                )}
-
-                                <div className="card-actions">
-                                    <button
-                                        onClick={() => handleStatusChange(d.id, 'delivered')}
-                                        className="btn-action btn-success"
-                                    >
-                                        <Check size={18} /> Entregue
-                                    </button>
-                                    <button
-                                        onClick={() => handleStatusChange(d.id, 'canceled')}
-                                        className="btn-action btn-danger"
-                                    >
-                                        <X size={18} />
-                                    </button>
                                 </div>
                             </div>
                         ))}
