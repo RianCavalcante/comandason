@@ -122,44 +122,68 @@ const Scanner: React.FC = () => {
         navigate('/');
 
         // 3. Send to webhook in background (fire and forget)
-        sendToWebhook(imageBlob, deliveryId as number);
+        // Fire webhook in background - use setTimeout to ensure it runs
+        // even after component unmounts
+        const id = deliveryId as number;
+        setTimeout(() => sendToWebhook(imageBlob, id), 0);
     };
 
     const sendToWebhook = async (imageBlob: Blob, deliveryId: number) => {
+        console.log('[Webhook] Iniciando envio, deliveryId:', deliveryId);
         try {
             const formData = new FormData();
             formData.append('image', imageBlob, 'comanda.jpg');
             formData.append('deliveryId', String(deliveryId));
             formData.append('timestamp', new Date().toISOString());
 
-            const response = await fetch(WEBHOOK_URL, {
-                method: 'POST',
-                body: formData
-            });
+            let response: Response;
+            try {
+                response = await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+            } catch (corsErr) {
+                // CORS blocks the response - try no-cors mode (fire and forget)
+                console.warn('[Webhook] CORS bloqueou, tentando no-cors...', corsErr);
+                await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    body: formData,
+                    mode: 'no-cors'
+                });
+                // Can't read response in no-cors, just mark as pending
+                console.log('[Webhook] Enviado via no-cors, marcando como pending');
+                await db.deliveries.update(deliveryId, { status: 'pending' });
+                return;
+            }
+
+            console.log('[Webhook] Response status:', response.status);
 
             if (response.ok) {
-                try {
-                    const data = await response.json();
+                const text = await response.text();
+                console.log('[Webhook] Response body:', text);
 
-                    // Update delivery with webhook response data
+                try {
+                    const data = JSON.parse(text);
+                    console.log('[Webhook] Dados parseados:', data);
+
                     await db.deliveries.update(deliveryId, {
-                        amount: data.valor ?? data.value ?? data.amount ?? 0,
+                        amount: Number(data.valor ?? data.value ?? data.amount ?? 0),
                         clientName: data.clientName || data.cliente || data.nome || '',
                         address: data.address || data.endereco || '',
-                        rawText: data.rawText || data.texto || JSON.stringify(data),
-                        status: 'pending' // Move to pending after processing
+                        rawText: data.rawText || data.texto || text,
+                        status: 'pending'
                     });
+                    console.log('[Webhook] ✅ Delivery atualizado com dados do n8n');
                 } catch {
-                    // Response wasn't JSON - mark as pending anyway
+                    console.warn('[Webhook] Response não é JSON válido');
                     await db.deliveries.update(deliveryId, { status: 'pending' });
                 }
             } else {
-                // Webhook error - mark as pending so user can edit manually
+                console.warn('[Webhook] Response não ok:', response.status);
                 await db.deliveries.update(deliveryId, { status: 'pending' });
             }
         } catch (err) {
-            console.error("Webhook Error:", err);
-            // Network error - mark as pending
+            console.error('[Webhook] Erro fatal:', err);
             await db.deliveries.update(deliveryId, { status: 'pending' });
         }
     };
