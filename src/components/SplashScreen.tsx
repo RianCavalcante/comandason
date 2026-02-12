@@ -10,13 +10,12 @@ const SplashScreen: React.FC<{ onFinish: () => void }> = ({ onFinish }) => {
     useEffect(() => {
         fetch('/lottie-splash.json')
             .then(r => r.json())
-            .then(setAnimData)
+            .then(data => {
+                setAnimData(data);
+                setShowButton(true);
+            })
             .catch(() => onFinish());
     }, [onFinish]);
-
-    const handleAnimComplete = () => {
-        setShowButton(true);
-    };
 
     const handleStart = () => {
         setFadeOut(true);
@@ -32,7 +31,6 @@ const SplashScreen: React.FC<{ onFinish: () => void }> = ({ onFinish }) => {
                     animationData={animData}
                     loop={false}
                     autoplay
-                    onComplete={handleAnimComplete}
                     style={{ width: '80%', maxWidth: 400 }}
                 />
                 <h1 className="splash-title">ComandaSon</h1>
