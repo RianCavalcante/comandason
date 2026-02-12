@@ -28,6 +28,7 @@ const Dashboard: React.FC = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deliveryToDelete, setDeliveryToDelete] = useState<number | null>(null);
     const [isPendingExpanded, setIsPendingExpanded] = useState(true);
+    const [isCompletedExpanded, setIsCompletedExpanded] = useState(true);
 
     const navigate = useNavigate();
     const deliveryAnim = useLottie('/lottie-delivery.json');
@@ -280,48 +281,59 @@ const Dashboard: React.FC = () => {
 
             {/* Completed/History Section */}
             <section className="section-container">
-                <div className="section-header">
+                <div
+                    className="section-header clickable-header"
+                    onClick={() => setIsCompletedExpanded(!isCompletedExpanded)}
+                >
                     <h3 className="section-title">Concluídas</h3>
+                    <div className="section-header-actions">
+                        <span className="section-count">{completedDeliveries.length}</span>
+                        {isCompletedExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                    </div>
                 </div>
 
-                {completedDeliveries.length === 0 && pendingDeliveries.length === 0 && processingDeliveries.length === 0 ? (
-                    <div className="empty-state-card">
-                        {emptyAnim ? (
-                            <Lottie animationData={emptyAnim} loop autoplay style={{ width: 180, height: 180 }} />
-                        ) : (
-                            <Package size={48} />
-                        )}
-                        <p>Nenhuma entrega hoje.<br />Bora rodar!</p>
-                    </div>
-                ) : (
-                    <div className="delivery-list-vertical">
-                        {completedDeliveries.map(d => (
-                            <div key={d.id} className={`delivery-row ${d.status}`}>
-                                <div className="status-indicator"></div>
-                                <div className="row-content">
-                                    <div className="row-header">
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <span className="row-time">{format(d.date, 'HH:mm')}</span>
-                                            <button
-                                                onClick={() => confirmDelete(d.id)}
-                                                style={{ background: 'none', border: 'none', color: '#f87171', opacity: 0.6, padding: 0, display: 'flex' }}
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                        </div>
-                                        <span className={`row-amount ${d.status === 'canceled' ? 'canceled-text' : ''}`}>
-                                            R$ {d.amount.toFixed(2)}
-                                        </span>
-                                    </div>
-                                    {(d.clientName || d.address) && (
-                                        <div className="row-details">
-                                            {d.clientName && <span>{d.clientName}</span>}
-                                            {d.address && <span> • {d.address}</span>}
-                                        </div>
-                                    )}
-                                </div>
+                {isCompletedExpanded && (
+                    <div className="animate-fade-in">
+                        {completedDeliveries.length === 0 && pendingDeliveries.length === 0 && processingDeliveries.length === 0 ? (
+                            <div className="empty-state-card">
+                                {emptyAnim ? (
+                                    <Lottie animationData={emptyAnim} loop autoplay style={{ width: 180, height: 180 }} />
+                                ) : (
+                                    <Package size={48} />
+                                )}
+                                <p>Nenhuma entrega hoje.<br />Bora rodar!</p>
                             </div>
-                        ))}
+                        ) : (
+                            <div className="delivery-list-vertical">
+                                {completedDeliveries.map(d => (
+                                    <div key={d.id} className={`delivery-row ${d.status}`}>
+                                        <div className="status-indicator"></div>
+                                        <div className="row-content">
+                                            <div className="row-header">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <span className="row-time">{format(d.date, 'HH:mm')}</span>
+                                                    <button
+                                                        onClick={() => confirmDelete(d.id)}
+                                                        style={{ background: 'none', border: 'none', color: '#f87171', opacity: 0.6, padding: 0, display: 'flex' }}
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
+                                                <span className={`row-amount ${d.status === 'canceled' ? 'canceled-text' : ''}`}>
+                                                    R$ {d.amount.toFixed(2)}
+                                                </span>
+                                            </div>
+                                            {(d.clientName || d.address) && (
+                                                <div className="row-details">
+                                                    {d.clientName && <span>{d.clientName}</span>}
+                                                    {d.address && <span> • {d.address}</span>}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
             </section>
