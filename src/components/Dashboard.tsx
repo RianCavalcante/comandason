@@ -5,12 +5,37 @@ import { ptBR } from 'date-fns/locale';
 import { Plus, Trash2, Check, XCircle, MapPin, User, Package, Clock, Loader, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const MotoIcon = ({ size = 18, className = '' }: { size?: number; className?: string }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <circle cx="5" cy="17" r="3" />
-        <circle cx="19" cy="17" r="3" />
-        <path d="M12 17h-2l-3.5-7H11l1 2h4l2-4h3l-3.5 7H14" />
-        <path d="M10 5h4" />
+const MotoIcon = ({ size = 20, className = '' }: { size?: number; className?: string }) => (
+    <svg width={size} height={size} viewBox="0 0 64 64" className={className} fill="none">
+        {/* Speed lines */}
+        <rect x="2" y="14" width="10" height="2.5" rx="1.25" fill="#475569" />
+        <rect x="5" y="19" width="6" height="2.5" rx="1.25" fill="#475569" />
+        <rect x="2" y="48" width="10" height="2.5" rx="1.25" fill="#475569" />
+        <rect x="6" y="53" width="6" height="2.5" rx="1.25" fill="#475569" />
+        {/* Delivery box */}
+        <rect x="12" y="14" width="22" height="22" rx="3" fill="#f59e0b" />
+        <path d="M23 20a5 5 0 0 0-5 5c0 5 5 8 5 8s5-3 5-8a5 5 0 0 0-5-5Z" fill="#ef4444" />
+        {/* Helmet */}
+        <circle cx="40" cy="14" r="6" fill="#64748b" />
+        <rect x="34" y="16" width="12" height="3" rx="1.5" fill="#475569" />
+        {/* Face */}
+        <rect x="37" y="13" width="4" height="3" rx="1" fill="#fbbf24" />
+        {/* Body */}
+        <rect x="36" y="20" width="10" height="12" rx="3" fill="#ef4444" />
+        {/* Arms */}
+        <path d="M46 24 l6 4" stroke="#fbbf24" strokeWidth="2.5" strokeLinecap="round" />
+        <path d="M36 24 l-2 6" stroke="#fbbf24" strokeWidth="2.5" strokeLinecap="round" />
+        {/* Scooter body */}
+        <path d="M28 44 Q32 36 52 38 L54 44 Z" fill="#3b82f6" />
+        <rect x="44" y="34" width="4" height="8" rx="2" fill="#3b82f6" />
+        <rect x="50" y="32" width="8" height="3" rx="1.5" fill="#60a5fa" />
+        {/* Wheels */}
+        <circle cx="22" cy="48" r="7" fill="#334155" />
+        <circle cx="22" cy="48" r="3.5" fill="#64748b" />
+        <circle cx="52" cy="48" r="7" fill="#334155" />
+        <circle cx="52" cy="48" r="3.5" fill="#64748b" />
+        {/* Seat */}
+        <rect x="34" y="36" width="12" height="3" rx="1.5" fill="#1e293b" />
     </svg>
 );
 
