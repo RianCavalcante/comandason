@@ -9,7 +9,8 @@ interface Delivery {
   createdAt: Date;
   clientName?: string;
   address?: string;
-  status: 'processing' | 'pending' | 'delivered' | 'canceled';
+  error?: string;
+  status: 'processing' | 'pending' | 'delivered' | 'canceled' | 'failed';
 }
 
 const db = new Dexie('ComandasonDB') as Dexie & {

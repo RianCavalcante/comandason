@@ -31,7 +31,7 @@ const Dashboard: React.FC = () => {
     const [isCompletedExpanded, setIsCompletedExpanded] = useState(true);
 
     const navigate = useNavigate();
-    const deliveryAnim = useLottie('/lottie-delivery.json');
+    const deliveryAnim = useLottie('/lottie-location.json');
     const emptyAnim = useLottie('/lottie-empty.json');
     const successAnim = useLottie('/lottie-food-delivered.json');
 
@@ -50,7 +50,7 @@ const Dashboard: React.FC = () => {
 
         setTodaysTotal(total);
 
-        const processing = todayDeliveries.filter(d => d.status === 'processing');
+        const processing = todayDeliveries.filter(d => d.status === 'processing' || d.status === 'failed');
         const pending = todayDeliveries.filter(d => d.status === 'pending');
         const completed = todayDeliveries
             .filter(d => d.status === 'delivered' || d.status === 'canceled')
@@ -179,7 +179,7 @@ const Dashboard: React.FC = () => {
                     </div>
                     <div className="delivery-grid">
                         {processingDeliveries.map(d => (
-                            <div key={d.id} className="delivery-card processing-card">
+                            <div key={d.id} className={`delivery-card processing-card ${d.status === 'failed' ? 'failed-card' : ''}`}>
                                 <div className="card-accent" />
                                 <div className="card-content">
                                     <div className="card-top-row">
@@ -187,17 +187,31 @@ const Dashboard: React.FC = () => {
                                             <Clock size={12} />
                                             {format(d.date, 'HH:mm')}
                                         </div>
-                                        <Loader size={20} className="spinner" />
+                                        {d.status === 'processing' ? (
+                                            <Loader size={20} className="spinner" />
+                                        ) : (
+                                            <XCircle size={20} className="text-danger" />
+                                        )}
                                     </div>
                                     <div className="processing-status">
-                                        <span className="processing-label pulse-text">Validando comanda...</span>
+                                        <span className={`processing-label ${d.status === 'processing' ? 'pulse-text' : 'text-danger'}`}>
+                                            {d.status === 'processing' ? 'Validando comanda...' : (d.error || 'Falha na leitura')}
+                                        </span>
                                     </div>
                                     <div className="card-actions-premium">
+                                        {d.status === 'failed' && (
+                                            <button
+                                                onClick={() => navigate('/scanner', { state: { retryId: d.id } })}
+                                                className="btn-deliver" style={{ flex: 2 }}
+                                            >
+                                                <RefreshCw size={18} /> Tentar Novamente
+                                            </button>
+                                        )}
                                         <button
                                             onClick={() => confirmDelete(d.id)}
                                             className="btn-cancel" style={{ flex: 1 }}
                                         >
-                                            <XCircle size={18} /> Cancelar
+                                            <Trash2 size={18} />
                                         </button>
                                     </div>
                                 </div>

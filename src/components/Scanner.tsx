@@ -1,9 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { X, Zap, ZapOff, ImagePlus, Loader2 } from 'lucide-react';
-import CustomModal from './CustomModal';
+import { X, Zap, ZapOff, ImagePlus } from 'lucide-react';
 import { db } from '../db';
 import { sendToWebhook } from '../utils/webhookService';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const Scanner: React.FC = () => {
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -14,12 +13,6 @@ const Scanner: React.FC = () => {
     // Flashlight state
     const [hasFlash, setHasFlash] = useState(false);
     const [flashOn, setFlashOn] = useState(false);
-
-    // Custom Modal state
-    const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
-    const [errorTitle, setErrorTitle] = useState('Erro');
-    const [errorMessage, setErrorMessage] = useState('');
-    const [isProcessing, setIsProcessing] = useState(false);
 
     const navigate = useNavigate();
 
@@ -46,9 +39,8 @@ const Scanner: React.FC = () => {
             }
         } catch (err) {
             console.error("Error accessing camera:", err);
-            setErrorTitle("Erro de Câmera");
-            setErrorMessage("Não foi possível acessar a câmera. Verifique se deu as permissões necessárias e tente novamente.");
-            setIsErrorModalOpen(true);
+            // Revert to dashboard on critical camera error if modal is removed
+            navigate('/');
         }
     };
 
@@ -106,44 +98,53 @@ const Scanner: React.FC = () => {
         processAndSend(file);
     };
 
+    const { state } = useLocation();
+    const retryId = state?.retryId as number | undefined;
+
     const processAndSend = async (imageBlob: Blob) => {
-        setIsProcessing(true);
+        let deliveryId: number;
 
-        // 1. Save delivery immediately as "processing"
-        const deliveryId = await db.deliveries.add({
-            amount: 0,
-            clientName: '',
-            address: '',
-            status: 'processing',
-            date: new Date(),
-            rawText: '',
-            createdAt: new Date()
-        });
-
-        // 2. Fire webhook and wait for result
-        const result = await sendToWebhook(imageBlob, deliveryId as number);
-
-        setIsProcessing(false);
-
-        if (result.success) {
-            navigate('/');
+        if (retryId) {
+            // Update existing record
+            deliveryId = retryId;
+            await db.deliveries.update(deliveryId, {
+                status: 'processing',
+                error: undefined,
+                date: new Date() // Reset time for retry
+            });
         } else {
-            // On failure, maybe delete the temp delivery? 
-            // For now, we'll keep it as "processing" or maybe "canceled" if we want to clean up.
-            // Let's delete it so it doesn't clutter the dashboard.
-            await db.deliveries.delete(deliveryId as number);
-
-            setErrorTitle("Falha na Leitura");
-            setErrorMessage(result.message || "O scanner falhou ao ler a comanda. Verifique a iluminação e tente novamente.");
-            setIsErrorModalOpen(true);
+            // 1. Save delivery immediately as "processing"
+            deliveryId = await db.deliveries.add({
+                amount: 0,
+                clientName: '',
+                address: '',
+                status: 'processing',
+                date: new Date(),
+                rawText: '',
+                createdAt: new Date()
+            }) as number;
         }
-    };
 
-    const handleRetry = () => {
-        setIsErrorModalOpen(false);
-        setErrorTitle('Erro');
-        setErrorMessage('');
-        startCamera();
+        // 2. Navigate immediately (speed for motoboy)
+        navigate('/', { replace: true });
+
+        // 3. Fire webhook in background
+        try {
+            const result = await sendToWebhook(imageBlob, deliveryId as number);
+            if (!result.success) {
+                // Update local record with failure status if webhook explicitly fails
+                await db.deliveries.update(deliveryId as number, {
+                    status: 'failed',
+                    error: result.message || "Erro no processamento da imagem."
+                });
+            }
+        } catch (error) {
+            console.error('Background processing error:', error);
+            await db.deliveries.update(deliveryId as number, {
+                status: 'failed',
+                error: "Erro inesperado ao enviar para o servidor."
+            });
+        }
     };
 
     return (
@@ -180,25 +181,6 @@ const Scanner: React.FC = () => {
                 </div>
             </div>
 
-            <CustomModal
-                isOpen={isErrorModalOpen}
-                onClose={() => setIsErrorModalOpen(false)}
-                onConfirm={handleRetry}
-                title={errorTitle}
-                message={errorMessage}
-                type="alert"
-                confirmText="Tentar Novamente"
-                variant="danger"
-            />
-
-            {/* Loading Overlay */}
-            {isProcessing && (
-                <div className="scanner-loading-overlay">
-                    <Loader2 size={48} className="spinner text-primary" />
-                    <p>Processando comanda...</p>
-                </div>
-            )}
-
             {/* Bottom Bar: Gallery and Shutter */}
             <div className="scanner-bottom-bar">
                 <button onClick={() => fileInputRef.current?.click()} className="btn-scanner-action">
@@ -213,7 +195,7 @@ const Scanner: React.FC = () => {
                     <div className="btn-capture-inner" />
                 </button>
 
-                {/* Empty spacer for balance or could put another action here */}
+                {/* Empty spacer for balance */}
                 <div style={{ width: 54 }} />
             </div>
 
