@@ -1158,6 +1158,102 @@ button {
   margin-left: 10px;
 }
 
+/* Inline Amount Editing */
+.clickable-amount {
+  cursor: pointer;
+  position: relative;
+  padding-right: 20px;
+}
+
+.edit-icon-subtle {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  transition: opacity 0.2s;
+  color: var(--color-primary);
+}
+
+.clickable-amount:hover .edit-icon-subtle {
+  opacity: 0.6;
+}
+
+.edit-amount-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--color-primary);
+}
+
+.currency-edit {
+  font-size: 0.8rem;
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.edit-amount-input {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+  width: 60px;
+  outline: none;
+}
+
+.btn-save-amount, .btn-cancel-edit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.btn-save-amount { color: #10b981; }
+.btn-cancel-edit { color: #ef4444; }
+
+.btn-save-amount:active, .btn-cancel-edit:active {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.clickable-row-amount {
+  cursor: pointer;
+  padding-right: 4px;
+  border-bottom: 1px dashed rgba(16, 185, 129, 0.3);
+}
+
+.row-edit-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.row-edit-input {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  border-radius: 4px;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  width: 50px;
+  padding: 2px 4px;
+  outline: none;
+}
+
+.btn-row-save {
+  background: none;
+  color: #10b981;
+  display: flex;
+  padding: 2px;
+}
+
 /* ========== RESPONSIVE ========== */
 
 /* Small phones (320px-374px) */

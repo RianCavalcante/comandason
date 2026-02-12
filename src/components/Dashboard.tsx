@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { db, type Delivery } from '../db';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Plus, Trash2, Check, XCircle, MapPin, User, Package, Clock, Loader, RefreshCw, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, Check, XCircle, MapPin, User, Package, Clock, Loader, RefreshCw, CheckCircle2, ChevronDown, ChevronUp, Edit2, Save } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Lottie from 'lottie-react';
 import CustomModal from './CustomModal'; // Added CustomModal import
@@ -32,6 +32,10 @@ const Dashboard: React.FC = () => {
     const [isPendingExpanded, setIsPendingExpanded] = useState(true);
     const [isCompletedExpanded, setIsCompletedExpanded] = useState(true);
     const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+
+    // Amount Editing State
+    const [editingAmountId, setEditingAmountId] = useState<number | null>(null);
+    const [tempAmount, setTempAmount] = useState<string>('');
 
     const navigate = useNavigate();
     const deliveryAnim = useLottie('/lottie-location.json');
@@ -103,6 +107,25 @@ const Dashboard: React.FC = () => {
             setIsDeleteModalOpen(false); // Close the modal after deletion
             loadData();
         }
+    };
+
+    const handleStartEdit = (delivery: Delivery) => {
+        setEditingAmountId(delivery.id);
+        setTempAmount(delivery.amount.toString());
+    };
+
+    const handleSaveAmount = async (id: number) => {
+        const amount = parseFloat(tempAmount.replace(',', '.'));
+        if (!isNaN(amount)) {
+            await db.deliveries.update(id, { amount });
+            setEditingAmountId(null);
+            loadData();
+        }
+    };
+
+    const handleCancelEdit = () => {
+        setEditingAmountId(null);
+        setTempAmount('');
     };
 
     return (
@@ -261,10 +284,35 @@ const Dashboard: React.FC = () => {
                                                     <Clock size={12} />
                                                     {format(d.date, 'HH:mm')}
                                                 </div>
-                                                <div className="delivery-amount-big">
-                                                    <span className="currency-small">R$</span>
-                                                    <span className="amount-value">{d.amount.toFixed(2)}</span>
-                                                </div>
+
+                                                {editingAmountId === d.id ? (
+                                                    <div className="edit-amount-container">
+                                                        <span className="currency-edit">R$</span>
+                                                        <input
+                                                            type="text"
+                                                            className="edit-amount-input"
+                                                            value={tempAmount}
+                                                            onChange={(e) => setTempAmount(e.target.value)}
+                                                            autoFocus
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') handleSaveAmount(d.id);
+                                                                if (e.key === 'Escape') handleCancelEdit();
+                                                            }}
+                                                        />
+                                                        <button className="btn-save-amount" onClick={() => handleSaveAmount(d.id)}>
+                                                            <Save size={16} />
+                                                        </button>
+                                                        <button className="btn-cancel-edit" onClick={() => handleCancelEdit()}>
+                                                            <XCircle size={16} />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="delivery-amount-big clickable-amount" onClick={() => handleStartEdit(d)}>
+                                                        <span className="currency-small">R$</span>
+                                                        <span className="amount-value">{d.amount.toFixed(2)}</span>
+                                                        <Edit2 size={12} className="edit-icon-subtle" />
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {(d.clientName || d.address) && (
@@ -346,9 +394,31 @@ const Dashboard: React.FC = () => {
                                                             <Trash2 size={14} />
                                                         </button>
                                                     </div>
-                                                    <span className={`row-amount ${d.status === 'canceled' ? 'canceled-text' : ''}`}>
-                                                        R$ {d.amount.toFixed(2)}
-                                                    </span>
+                                                    {editingAmountId === d.id ? (
+                                                        <div className="row-edit-container">
+                                                            <input
+                                                                type="text"
+                                                                className="row-edit-input"
+                                                                value={tempAmount}
+                                                                onChange={(e) => setTempAmount(e.target.value)}
+                                                                autoFocus
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter') handleSaveAmount(d.id);
+                                                                    if (e.key === 'Escape') handleCancelEdit();
+                                                                }}
+                                                            />
+                                                            <button className="btn-row-save" onClick={() => handleSaveAmount(d.id)}>
+                                                                <Save size={14} />
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <span
+                                                            className={`row-amount ${d.status === 'canceled' ? 'canceled-text' : ''} clickable-row-amount`}
+                                                            onClick={() => handleStartEdit(d)}
+                                                        >
+                                                            R$ {d.amount.toFixed(2)}
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 {(d.clientName || d.address) && (
                                                     <div className="row-details">
