@@ -5,6 +5,7 @@ import { ptBR } from 'date-fns/locale';
 import { Plus, Trash2, Check, XCircle, MapPin, User, Package, Clock, Loader, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Lottie from 'lottie-react';
+import CustomModal from './CustomModal'; // Added CustomModal import
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const useLottie = (url: string) => {
@@ -22,6 +23,10 @@ const Dashboard: React.FC = () => {
     const [completedDeliveries, setCompletedDeliveries] = useState<Delivery[]>([]);
     const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
     const [successDeliveryId, setSuccessDeliveryId] = useState<number | null>(null);
+
+    // Custom Modal state
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [deliveryToDelete, setDeliveryToDelete] = useState<number | null>(null);
 
     const navigate = useNavigate();
     const deliveryAnim = useLottie('/lottie-delivery.json');
@@ -81,15 +86,31 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (confirm('Tem certeza que deseja apagar esta comanda?')) {
-            await db.deliveries.delete(id);
+    const confirmDelete = (id: number) => {
+        setDeliveryToDelete(id);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleDelete = async () => {
+        if (deliveryToDelete !== null) {
+            await db.deliveries.delete(deliveryToDelete);
+            setDeliveryToDelete(null);
+            setIsDeleteModalOpen(false); // Close the modal after deletion
             loadData();
         }
     };
 
     return (
         <div className="dashboard-container">
+            <CustomModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleDelete}
+                title="Apagar Comanda"
+                message="Tem certeza que deseja apagar esta comanda? Esta ação não pode ser desfeita."
+                type="confirm"
+                variant="danger"
+            />
             {/* Success Animation Overlay */}
             {showSuccessOverlay && (
                 <div className="success-overlay">
@@ -171,7 +192,7 @@ const Dashboard: React.FC = () => {
                                     </div>
                                     <div className="card-actions-premium">
                                         <button
-                                            onClick={() => handleDelete(d.id)}
+                                            onClick={() => confirmDelete(d.id)}
                                             className="btn-cancel" style={{ flex: 1 }}
                                         >
                                             <XCircle size={18} /> Cancelar
@@ -270,7 +291,15 @@ const Dashboard: React.FC = () => {
                                 <div className="status-indicator"></div>
                                 <div className="row-content">
                                     <div className="row-header">
-                                        <span className="row-time">{format(d.date, 'HH:mm')}</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span className="row-time">{format(d.date, 'HH:mm')}</span>
+                                            <button
+                                                onClick={() => confirmDelete(d.id)}
+                                                style={{ background: 'none', border: 'none', color: '#f87171', opacity: 0.6, padding: 0, display: 'flex' }}
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
                                         <span className={`row-amount ${d.status === 'canceled' ? 'canceled-text' : ''}`}>
                                             R$ {d.amount.toFixed(2)}
                                         </span>
@@ -282,9 +311,6 @@ const Dashboard: React.FC = () => {
                                         </div>
                                     )}
                                 </div>
-                                <button onClick={() => handleDelete(d.id)} className="btn-icon-small">
-                                    <Trash2 size={16} />
-                                </button>
                             </div>
                         ))}
                     </div>

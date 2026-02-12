@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { X, Zap, ZapOff, ImagePlus } from 'lucide-react';
+import CustomModal from './CustomModal';
 import { db } from '../db';
 import { sendToWebhook } from '../utils/webhookService';
 import { useNavigate } from 'react-router-dom';
@@ -13,6 +14,10 @@ const Scanner: React.FC = () => {
     // Flashlight state
     const [hasFlash, setHasFlash] = useState(false);
     const [flashOn, setFlashOn] = useState(false);
+
+    // Custom Modal state
+    const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
 
     const navigate = useNavigate();
 
@@ -39,7 +44,8 @@ const Scanner: React.FC = () => {
             }
         } catch (err) {
             console.error("Error accessing camera:", err);
-            alert("Erro ao acessar a câmera. Verifique as permissões.");
+            setErrorMessage("Não foi possível acessar a câmera. Verifique se deu as permissões necessárias e tente novamente.");
+            setIsErrorModalOpen(true);
         }
     };
 
@@ -149,6 +155,15 @@ const Scanner: React.FC = () => {
                     <div className="scanning-text">Enquadre a comanda</div>
                 </div>
             </div>
+
+            <CustomModal
+                isOpen={isErrorModalOpen}
+                onClose={() => setIsErrorModalOpen(false)}
+                title="Erro de Câmera"
+                message={errorMessage}
+                type="alert"
+                variant="danger"
+            />
 
             {/* Bottom Bar: Gallery and Shutter */}
             <div className="scanner-bottom-bar">

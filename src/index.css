@@ -138,6 +138,28 @@ button {
   box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
   z-index: 10;
 }
+
+.btn-refresh {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-refresh:active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  transform: rotate(30deg);
+}
+
 .fab-scan:active { transform: scale(0.95); }
 
 /* Navigation */
@@ -615,11 +637,13 @@ button {
 }
 
 .app-logo {
-  width: 72px;
-  height: 72px;
-  border-radius: 12px;
+  width: 84px;
+  height: 84px;
+  border-radius: 14px;
   overflow: hidden;
   flex-shrink: 0;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .app-logo img {
@@ -1218,4 +1242,77 @@ button {
   color: #fff;
   margin-top: -20px;
   text-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* Custom Modal Premium */
+.custom-modal-content {
+  background: linear-gradient(145deg, #151b2e 0%, #0a0e1a 100%);
+  padding: 30px;
+  border-radius: 28px;
+  width: 90%;
+  max-width: 340px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  text-align: center;
+  animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.320, 1.275) forwards;
+}
+
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.modal-header-visual {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.modal-icon-danger { color: #ef4444; }
+.modal-icon-info { color: #3b82f6; }
+.modal-icon-success { color: #10b981; }
+
+.modal-title {
+  font-size: 1.4rem !important;
+  font-weight: 800 !important;
+  color: #fff !important;
+  margin-bottom: 12px !important;
+  letter-spacing: -0.5px;
+}
+
+.modal-message {
+  font-size: 0.95rem;
+  color: #94a3b8;
+  line-height: 1.5;
+  margin-bottom: 30px;
+}
+
+.modal-actions-custom {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-modal-cancel {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.04);
+  color: #94a3b8;
+  padding: 14px;
+  border-radius: 16px;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.btn-modal-confirm {
+  flex: 1;
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  color: #fff;
+  padding: 14px;
+  border-radius: 16px;
+  font-weight: 700;
+  box-shadow: 0 8px 16px rgba(16, 185, 129, 0.2);
+}
+
+.btn-modal-confirm.confirm-danger {
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+  box-shadow: 0 8px 16px rgba(239, 68, 68, 0.2);
 }
