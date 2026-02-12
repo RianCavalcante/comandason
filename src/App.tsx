@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, History as HistoryIcon } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Scanner from './components/Scanner';
 import History from './components/History';
+import SplashScreen from './components/SplashScreen';
 
 const Navigation = () => {
   const location = useLocation();
@@ -23,6 +25,12 @@ const Navigation = () => {
 };
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true);
+
+  if (showSplash) {
+    return <SplashScreen onFinish={() => setShowSplash(false)} />;
+  }
+
   return (
     <Router>
       <Routes>

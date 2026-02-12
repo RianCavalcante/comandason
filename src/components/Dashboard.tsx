@@ -4,47 +4,29 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Plus, Trash2, Check, XCircle, MapPin, User, Package, Clock, Loader, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import Lottie from 'lottie-react';
 
-const MotoIcon = ({ size = 20, className = '' }: { size?: number; className?: string }) => (
-    <svg width={size} height={size} viewBox="0 0 64 64" className={className} fill="none">
-        {/* Speed lines */}
-        <rect x="2" y="14" width="10" height="2.5" rx="1.25" fill="#475569" />
-        <rect x="5" y="19" width="6" height="2.5" rx="1.25" fill="#475569" />
-        <rect x="2" y="48" width="10" height="2.5" rx="1.25" fill="#475569" />
-        <rect x="6" y="53" width="6" height="2.5" rx="1.25" fill="#475569" />
-        {/* Delivery box */}
-        <rect x="12" y="14" width="22" height="22" rx="3" fill="#f59e0b" />
-        <path d="M23 20a5 5 0 0 0-5 5c0 5 5 8 5 8s5-3 5-8a5 5 0 0 0-5-5Z" fill="#ef4444" />
-        {/* Helmet */}
-        <circle cx="40" cy="14" r="6" fill="#64748b" />
-        <rect x="34" y="16" width="12" height="3" rx="1.5" fill="#475569" />
-        {/* Face */}
-        <rect x="37" y="13" width="4" height="3" rx="1" fill="#fbbf24" />
-        {/* Body */}
-        <rect x="36" y="20" width="10" height="12" rx="3" fill="#ef4444" />
-        {/* Arms */}
-        <path d="M46 24 l6 4" stroke="#fbbf24" strokeWidth="2.5" strokeLinecap="round" />
-        <path d="M36 24 l-2 6" stroke="#fbbf24" strokeWidth="2.5" strokeLinecap="round" />
-        {/* Scooter body */}
-        <path d="M28 44 Q32 36 52 38 L54 44 Z" fill="#3b82f6" />
-        <rect x="44" y="34" width="4" height="8" rx="2" fill="#3b82f6" />
-        <rect x="50" y="32" width="8" height="3" rx="1.5" fill="#60a5fa" />
-        {/* Wheels */}
-        <circle cx="22" cy="48" r="7" fill="#334155" />
-        <circle cx="22" cy="48" r="3.5" fill="#64748b" />
-        <circle cx="52" cy="48" r="7" fill="#334155" />
-        <circle cx="52" cy="48" r="3.5" fill="#64748b" />
-        {/* Seat */}
-        <rect x="34" y="36" width="12" height="3" rx="1.5" fill="#1e293b" />
-    </svg>
-);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const useLottie = (url: string) => {
+    const [data, setData] = useState<any>(null);
+    useEffect(() => {
+        fetch(url).then(r => r.json()).then(setData).catch(() => { });
+    }, [url]);
+    return data;
+};
 
 const Dashboard: React.FC = () => {
     const [todaysTotal, setTodaysTotal] = useState(0);
     const [processingDeliveries, setProcessingDeliveries] = useState<Delivery[]>([]);
     const [pendingDeliveries, setPendingDeliveries] = useState<Delivery[]>([]);
     const [completedDeliveries, setCompletedDeliveries] = useState<Delivery[]>([]);
+    const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
+    const [successDeliveryId, setSuccessDeliveryId] = useState<number | null>(null);
+
     const navigate = useNavigate();
+    const deliveryAnim = useLottie('/lottie-delivery.json');
+    const emptyAnim = useLottie('/lottie-empty.json');
+    const successAnim = useLottie('/lottie-food-delivered.json');
 
     const loadData = useCallback(async () => {
         const now = new Date();
@@ -81,8 +63,22 @@ const Dashboard: React.FC = () => {
     }, [loadData]);
 
     const handleStatusChange = async (id: number, newStatus: 'delivered' | 'canceled') => {
-        await db.deliveries.update(id, { status: newStatus });
-        loadData();
+        if (newStatus === 'delivered') {
+            setSuccessDeliveryId(id);
+            setShowSuccessOverlay(true);
+        } else {
+            await db.deliveries.update(id, { status: newStatus });
+            loadData();
+        }
+    };
+
+    const handleAnimationComplete = async () => {
+        if (successDeliveryId !== null) {
+            await db.deliveries.update(successDeliveryId, { status: 'delivered' });
+            setShowSuccessOverlay(false);
+            setSuccessDeliveryId(null);
+            loadData();
+        }
     };
 
     const handleDelete = async (id: number) => {
@@ -94,6 +90,23 @@ const Dashboard: React.FC = () => {
 
     return (
         <div className="dashboard-container">
+            {/* Success Animation Overlay */}
+            {showSuccessOverlay && (
+                <div className="success-overlay">
+                    <div className="success-container">
+                        {successAnim && (
+                            <Lottie
+                                animationData={successAnim}
+                                loop={false}
+                                onComplete={handleAnimationComplete}
+                                style={{ width: 350, height: 350 }}
+                            />
+                        )}
+                        <h2 className="success-text">ENTREGUE!</h2>
+                    </div>
+                </div>
+            )}
+
             {/* Header / Stats Card */}
             <header className="dashboard-header-card">
                 <div className="header-top">
@@ -175,7 +188,10 @@ const Dashboard: React.FC = () => {
             {pendingDeliveries.length > 0 && (
                 <section className="section-container">
                     <div className="section-header">
-                        <h3 className="section-title text-yellow"><MotoIcon size={18} /> Em Rota</h3>
+                        <h3 className="section-title text-yellow">
+                            {deliveryAnim && <Lottie animationData={deliveryAnim} loop autoplay style={{ width: 32, height: 32 }} />}
+                            Em Rota
+                        </h3>
                         <span className="section-count">{pendingDeliveries.length}</span>
                     </div>
                     <div className="delivery-grid">
@@ -240,7 +256,11 @@ const Dashboard: React.FC = () => {
 
                 {completedDeliveries.length === 0 && pendingDeliveries.length === 0 && processingDeliveries.length === 0 ? (
                     <div className="empty-state-card">
-                        <Package size={48} />
+                        {emptyAnim ? (
+                            <Lottie animationData={emptyAnim} loop autoplay style={{ width: 180, height: 180 }} />
+                        ) : (
+                            <Package size={48} />
+                        )}
                         <p>Nenhuma entrega hoje.<br />Bora rodar!</p>
                     </div>
                 ) : (

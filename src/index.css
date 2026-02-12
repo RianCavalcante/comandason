@@ -1053,3 +1053,124 @@ button {
   .dashboard-header-card { padding: 24px; }
 }
 
+/* ===== Splash Screen ===== */
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--color-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  transition: opacity 0.6s ease, transform 0.6s ease;
+  opacity: 1;
+}
+
+.splash-fade-out {
+  opacity: 0;
+  transform: scale(1.05);
+}
+
+.splash-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.splash-title {
+  font-family: var(--font-sans);
+  font-size: 2.4rem;
+  font-weight: 800;
+  letter-spacing: -1px;
+  background: linear-gradient(135deg, #10b981 0%, #34d399 40%, #6ee7b7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+  margin-top: -12px;
+}
+
+.splash-subtitle {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  color: var(--color-text-muted);
+  margin: 4px 0 0;
+  font-weight: 400;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.splash-btn {
+  margin-top: 32px;
+  border: none;
+  padding: 16px 48px;
+  border-radius: 50px;
+  font-family: var(--font-sans);
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%);
+  box-shadow:
+    0 8px 24px rgba(16, 185, 129, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.15) inset;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  pointer-events: none;
+}
+
+.splash-btn-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.splash-btn:active {
+  transform: scale(0.96);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+/* ===== Success Overlay ===== */
+.success-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(10, 14, 26, 0.9);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.success-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: scale(0.8);
+  animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.320, 1.275) forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.success-text {
+  font-family: var(--font-sans);
+  font-size: 2rem;
+  font-weight: 800;
+  color: #fff;
+  margin-top: -20px;
+  text-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
