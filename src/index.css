@@ -1513,3 +1513,32 @@ button {
   font-weight: 500;
   opacity: 0.9;
 }
+
+.section-header.clickable-header {
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+  padding: 8px 12px;
+  margin: -8px -12px;
+  border-radius: 12px;
+}
+
+.section-header.clickable-header:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.section-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-text-muted);
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

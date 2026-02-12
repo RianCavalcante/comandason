@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { db, type Delivery } from '../db';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Plus, Trash2, Check, XCircle, MapPin, User, Package, Clock, Loader, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, Check, XCircle, MapPin, User, Package, Clock, Loader, RefreshCw, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Lottie from 'lottie-react';
 import CustomModal from './CustomModal'; // Added CustomModal import
@@ -27,6 +27,7 @@ const Dashboard: React.FC = () => {
     // Custom Modal state
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deliveryToDelete, setDeliveryToDelete] = useState<number | null>(null);
+    const [isPendingExpanded, setIsPendingExpanded] = useState(true);
 
     const navigate = useNavigate();
     const deliveryAnim = useLottie('/lottie-delivery.json');
@@ -208,64 +209,72 @@ const Dashboard: React.FC = () => {
             {/* Pending Deliveries Section */}
             {pendingDeliveries.length > 0 && (
                 <section className="section-container">
-                    <div className="section-header">
+                    <div
+                        className="section-header clickable-header"
+                        onClick={() => setIsPendingExpanded(!isPendingExpanded)}
+                    >
                         <h3 className="section-title text-yellow">
                             {deliveryAnim && <Lottie animationData={deliveryAnim} loop autoplay style={{ width: 32, height: 32 }} />}
                             Em Rota
                         </h3>
-                        <span className="section-count">{pendingDeliveries.length}</span>
+                        <div className="section-header-actions">
+                            <span className="section-count">{pendingDeliveries.length}</span>
+                            {isPendingExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                        </div>
                     </div>
-                    <div className="delivery-grid">
-                        {pendingDeliveries.map(d => (
-                            <div key={d.id} className="delivery-card premium-card">
-                                <div className="card-accent" />
-                                <div className="card-content">
-                                    <div className="card-top-row">
-                                        <div className="delivery-time-badge">
-                                            <Clock size={12} />
-                                            {format(d.date, 'HH:mm')}
+                    {isPendingExpanded && (
+                        <div className="delivery-grid animate-fade-in">
+                            {pendingDeliveries.map(d => (
+                                <div key={d.id} className="delivery-card premium-card">
+                                    <div className="card-accent" />
+                                    <div className="card-content">
+                                        <div className="card-top-row">
+                                            <div className="delivery-time-badge">
+                                                <Clock size={12} />
+                                                {format(d.date, 'HH:mm')}
+                                            </div>
+                                            <div className="delivery-amount-big">
+                                                <span className="currency-small">R$</span>
+                                                <span className="amount-value">{d.amount.toFixed(2)}</span>
+                                            </div>
                                         </div>
-                                        <div className="delivery-amount-big">
-                                            <span className="currency-small">R$</span>
-                                            <span className="amount-value">{d.amount.toFixed(2)}</span>
-                                        </div>
-                                    </div>
 
-                                    {(d.clientName || d.address) && (
-                                        <div className="card-info-section">
-                                            {d.clientName && (
-                                                <div className="info-chip">
-                                                    <User size={13} />
-                                                    <span>{d.clientName}</span>
-                                                </div>
-                                            )}
-                                            {d.address && (
-                                                <div className="info-chip address-chip">
-                                                    <MapPin size={13} />
-                                                    <span>{d.address}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
+                                        {(d.clientName || d.address) && (
+                                            <div className="card-info-section">
+                                                {d.clientName && (
+                                                    <div className="info-chip">
+                                                        <User size={13} />
+                                                        <span>{d.clientName}</span>
+                                                    </div>
+                                                )}
+                                                {d.address && (
+                                                    <div className="info-chip address-chip">
+                                                        <MapPin size={13} />
+                                                        <span>{d.address}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
 
-                                    <div className="card-actions-premium">
-                                        <button
-                                            onClick={() => handleStatusChange(d.id, 'delivered')}
-                                            className="btn-deliver"
-                                        >
-                                            <CheckCircle2 size={18} /> Entregue
-                                        </button>
-                                        <button
-                                            onClick={() => handleStatusChange(d.id, 'canceled')}
-                                            className="btn-cancel"
-                                        >
-                                            <XCircle size={18} />
-                                        </button>
+                                        <div className="card-actions-premium">
+                                            <button
+                                                onClick={() => handleStatusChange(d.id, 'delivered')}
+                                                className="btn-deliver"
+                                            >
+                                                <CheckCircle2 size={18} /> Entregue
+                                            </button>
+                                            <button
+                                                onClick={() => handleStatusChange(d.id, 'canceled')}
+                                                className="btn-cancel"
+                                            >
+                                                <XCircle size={18} />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )}
                 </section>
             )}
 
