@@ -178,13 +178,15 @@ button {
   color: var(--color-primary);
 }
 
-/* Scanner */
+/* Scanner Premium Redesign */
 .scanner-container {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
   background: #000;
   position: relative;
+  overflow: hidden;
 }
 
 .camera-feed {
@@ -193,91 +195,134 @@ button {
   object-fit: cover;
 }
 
-.captured-image {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.scanner-controls {
+/* Scanner Layout Layers */
+.scanner-top-bar {
   position: absolute;
-  bottom: 40px;
+  top: 0;
   left: 0;
   right: 0;
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  padding: 0 20px;
+  padding: calc(15px + env(safe-area-inset-top, 0px)) 20px 20px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 100%);
+  z-index: 10;
 }
 
-.btn-capture {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  border: 4px solid white;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-}
-
-.capture-inner {
-  width: 60px;
-  height: 60px;
-  background: white;
-  border-radius: 50%;
-  transition: transform 0.1s;
-}
-.btn-capture:active .capture-inner { transform: scale(0.9); }
-
-.btn-gallery {
+.scanner-frame-container {
   position: absolute;
-  bottom: 40px;
-  left: 40px;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(8px);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  color: white;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
+  pointer-events: none;
+  z-index: 5;
 }
 
-.btn-gallery:active {
-  background: rgba(255, 255, 255, 0.3);
+.scanner-frame {
+  width: 80%;
+  aspect-ratio: 1 / 1.2;
+  border-radius: 24px;
+  position: relative;
+  box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.4); /* Dim area outside frame */
 }
 
-.btn-refresh {
-  width: 40px;
-  height: 40px;
+.scanner-frame::before,
+.scanner-frame::after,
+.scanner-corner-tl,
+.scanner-corner-br {
+  content: '';
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border-color: var(--color-primary);
+  border-style: solid;
+  border-width: 0;
+}
+
+/* Corner Guides */
+.scanner-frame::before { top: 0; left: 0; border-top-width: 4px; border-left-width: 4px; border-top-left-radius: 24px; }
+.scanner-frame::after { top: 0; right: 0; border-top-width: 4px; border-right-width: 4px; border-top-right-radius: 24px; }
+.scanner-corner-tl { bottom: 0; left: 0; border-bottom-width: 4px; border-left-width: 4px; border-bottom-left-radius: 24px; }
+.scanner-corner-br { bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 24px; }
+
+.scanning-text {
+  position: absolute;
+  bottom: -40px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.scanner-bottom-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 20px 20px calc(40px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%);
+  z-index: 10;
+}
+
+.btn-scanner-action {
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
 }
 
-.btn-refresh:active {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
+.btn-scanner-action:active {
+  transform: scale(0.9);
+  background: rgba(255, 255, 255, 0.2);
 }
 
-.btn-icon {
-  position: absolute;
-  top: 20px;
-  left: 20px; /* Or right based on design */
-  background: rgba(0,0,0,0.5);
-  color: white;
-  padding: 10px;
+.btn-capture-premium {
+  width: 84px;
+  height: 84px;
   border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 4px solid white;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-capture-inner {
+  width: 100%;
+  height: 100%;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.15s;
+}
+
+.btn-capture-premium:active .btn-capture-inner {
+  transform: scale(0.85);
+}
+
+.btn-capture-premium:disabled .btn-capture-inner {
+  background: #475569;
+}
+.btn-capture-premium:disabled {
+  border-color: #475569;
 }
 
 .processing-indicator {

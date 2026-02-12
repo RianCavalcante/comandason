@@ -119,47 +119,62 @@ const Scanner: React.FC = () => {
     return (
         <div className="scanner-container">
             <video ref={videoRef} autoPlay playsInline className="camera-feed" />
-
             <canvas ref={canvasRef} style={{ display: 'none' }} />
 
-            <div className="scanner-controls">
-                <button onClick={() => navigate('/')} className="btn-icon">
+            {/* Top Bar: Close and Flash */}
+            <div className="scanner-top-bar">
+                <button onClick={() => navigate('/')} className="btn-scanner-action">
                     <X size={24} />
                 </button>
 
                 {hasFlash && (
                     <button
                         onClick={toggleFlash}
-                        className="btn-icon"
+                        className="btn-scanner-action"
                         style={{
-                            top: '20px',
-                            right: '20px',
-                            left: 'auto',
-                            background: flashOn ? 'rgba(255, 255, 0, 0.3)' : 'rgba(0,0,0,0.5)',
-                            color: flashOn ? '#ffeb3b' : 'white'
+                            color: flashOn ? '#ffeb3b' : 'white',
+                            borderColor: flashOn ? 'rgba(255, 235, 59, 0.4)' : 'rgba(255, 255, 255, 0.2)'
                         }}
                     >
                         {flashOn ? <Zap size={24} /> : <ZapOff size={24} />}
                     </button>
                 )}
-
-                <>
-                    <button onClick={() => fileInputRef.current?.click()} className="btn-gallery">
-                        <ImagePlus size={22} />
-                    </button>
-                    <button onClick={captureImage} className="btn-capture" disabled={!isStreamActive}>
-                        <div className="capture-inner" />
-                    </button>
-                </>
-
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    onChange={handleGalleryPick}
-                />
             </div>
+
+            {/* Scanning Frame / Center Guide */}
+            <div className="scanner-frame-container">
+                <div className="scanner-frame">
+                    <div className="scanner-corner-tl" />
+                    <div className="scanner-corner-br" />
+                    <div className="scanning-text">Enquadre a comanda</div>
+                </div>
+            </div>
+
+            {/* Bottom Bar: Gallery and Shutter */}
+            <div className="scanner-bottom-bar">
+                <button onClick={() => fileInputRef.current?.click()} className="btn-scanner-action">
+                    <ImagePlus size={24} />
+                </button>
+
+                <button
+                    onClick={captureImage}
+                    className="btn-capture-premium"
+                    disabled={!isStreamActive}
+                >
+                    <div className="btn-capture-inner" />
+                </button>
+
+                {/* Empty spacer for balance or could put another action here */}
+                <div style={{ width: 54 }} />
+            </div>
+
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleGalleryPick}
+            />
         </div>
     );
 };
