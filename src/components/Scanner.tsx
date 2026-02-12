@@ -1,16 +1,14 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { X, Zap, ZapOff, ImagePlus } from 'lucide-react';
 import { db } from '../db';
+import { sendToWebhook } from '../utils/webhookService';
 import { useNavigate } from 'react-router-dom';
-
-const WEBHOOK_URL = 'https://n8n-webhook.nubuwf.easypanel.host/webhook/imagemurl';
 
 const Scanner: React.FC = () => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isStreamActive, setIsStreamActive] = useState(false);
-    const [capturedImage, setCapturedImage] = useState<string | null>(null);
 
     // Flashlight state
     const [hasFlash, setHasFlash] = useState(false);
@@ -83,15 +81,11 @@ const Scanner: React.FC = () => {
         canvasRef.current.height = videoRef.current.videoHeight;
         context.drawImage(videoRef.current, 0, 0);
 
-        // Convert canvas to blob (binary, ~33% smaller than base64)
+        // Convert canvas to blob (binary)
         canvasRef.current.toBlob(async (blob) => {
             if (!blob) return;
-            const previewUrl = URL.createObjectURL(blob);
-            setCapturedImage(previewUrl);
-
             if (flashOn) toggleFlash();
             stopCamera();
-
             await processAndSend(blob);
         }, 'image/jpeg', 0.7);
     };
@@ -99,9 +93,6 @@ const Scanner: React.FC = () => {
     const handleGalleryPick = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-
-        const previewUrl = URL.createObjectURL(file);
-        setCapturedImage(previewUrl);
         stopCamera();
         processAndSend(file);
     };
@@ -121,80 +112,13 @@ const Scanner: React.FC = () => {
         // 2. Navigate to dashboard INSTANTLY
         navigate('/');
 
-        // 3. Send to webhook in background (fire and forget)
-        // Fire webhook in background - use setTimeout to ensure it runs
-        // even after component unmounts
-        const id = deliveryId as number;
-        setTimeout(() => sendToWebhook(imageBlob, id), 0);
-    };
-
-    const sendToWebhook = async (imageBlob: Blob, deliveryId: number) => {
-        console.log('[Webhook] Iniciando envio, deliveryId:', deliveryId);
-        try {
-            const formData = new FormData();
-            formData.append('image', imageBlob, 'comanda.jpg');
-            formData.append('deliveryId', String(deliveryId));
-            formData.append('timestamp', new Date().toISOString());
-
-            let response: Response;
-            try {
-                response = await fetch(WEBHOOK_URL, {
-                    method: 'POST',
-                    body: formData
-                });
-            } catch (corsErr) {
-                // CORS blocks the response - try no-cors mode (fire and forget)
-                console.warn('[Webhook] CORS bloqueou, tentando no-cors...', corsErr);
-                await fetch(WEBHOOK_URL, {
-                    method: 'POST',
-                    body: formData,
-                    mode: 'no-cors'
-                });
-                // Can't read response in no-cors, just mark as pending
-                console.log('[Webhook] Enviado via no-cors, marcando como pending');
-                await db.deliveries.update(deliveryId, { status: 'pending' });
-                return;
-            }
-
-            console.log('[Webhook] Response status:', response.status);
-
-            if (response.ok) {
-                const text = await response.text();
-                console.log('[Webhook] Response body:', text);
-
-                try {
-                    const data = JSON.parse(text);
-                    console.log('[Webhook] Dados parseados:', data);
-
-                    await db.deliveries.update(deliveryId, {
-                        amount: Number(data.valor ?? data.value ?? data.amount ?? 0),
-                        clientName: data.clientName || data.cliente || data.nome || '',
-                        address: data.address || data.endereco || '',
-                        rawText: data.rawText || data.texto || text,
-                        status: 'pending'
-                    });
-                    console.log('[Webhook] ✅ Delivery atualizado com dados do n8n');
-                } catch {
-                    console.warn('[Webhook] Response não é JSON válido');
-                    await db.deliveries.update(deliveryId, { status: 'pending' });
-                }
-            } else {
-                console.warn('[Webhook] Response não ok:', response.status);
-                await db.deliveries.update(deliveryId, { status: 'pending' });
-            }
-        } catch (err) {
-            console.error('[Webhook] Erro fatal:', err);
-            await db.deliveries.update(deliveryId, { status: 'pending' });
-        }
+        // 3. Fire webhook in background (runs in separate module, survives unmount)
+        sendToWebhook(imageBlob, deliveryId as number);
     };
 
     return (
         <div className="scanner-container">
-            {capturedImage ? (
-                <img src={capturedImage} alt="Captured" className="captured-image" />
-            ) : (
-                <video ref={videoRef} autoPlay playsInline className="camera-feed" />
-            )}
+            <video ref={videoRef} autoPlay playsInline className="camera-feed" />
 
             <canvas ref={canvasRef} style={{ display: 'none' }} />
 
@@ -203,7 +127,7 @@ const Scanner: React.FC = () => {
                     <X size={24} />
                 </button>
 
-                {!capturedImage && hasFlash && (
+                {hasFlash && (
                     <button
                         onClick={toggleFlash}
                         className="btn-icon"
@@ -219,16 +143,14 @@ const Scanner: React.FC = () => {
                     </button>
                 )}
 
-                {!capturedImage && (
-                    <>
-                        <button onClick={() => fileInputRef.current?.click()} className="btn-gallery">
-                            <ImagePlus size={22} />
-                        </button>
-                        <button onClick={captureImage} className="btn-capture" disabled={!isStreamActive}>
-                            <div className="capture-inner" />
-                        </button>
-                    </>
-                )}
+                <>
+                    <button onClick={() => fileInputRef.current?.click()} className="btn-gallery">
+                        <ImagePlus size={22} />
+                    </button>
+                    <button onClick={captureImage} className="btn-capture" disabled={!isStreamActive}>
+                        <div className="capture-inner" />
+                    </button>
+                </>
 
                 <input
                     ref={fileInputRef}
