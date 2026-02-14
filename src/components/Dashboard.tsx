@@ -324,10 +324,16 @@ const Dashboard: React.FC = () => {
                                                         </div>
                                                     )}
                                                     {d.address && (
-                                                        <div className="info-chip address-chip">
+                                                        <a
+                                                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(d.address)}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="info-chip address-chip clickable-address"
+                                                        >
                                                             <MapPin size={13} />
                                                             <span>{d.address}</span>
-                                                        </div>
+                                                            <div className="external-link-icon">↗</div>
+                                                        </a>
                                                     )}
                                                 </div>
                                             )}
